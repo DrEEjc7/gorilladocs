@@ -6,37 +6,28 @@
     <title>Gorilla Docs - Rich Text Editor</title>
     <link rel="icon" type="image/svg+xml" href="https://ik.imagekit.io/dee7studio/Logos/Gorilla%20Docs.svg?updatedAt=1752525553443">
     
-    <!-- Quill.js CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.css" rel="stylesheet">
     
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
     <div class="app-container">
-        <!-- Header -->
         <header class="header">
             <div class="header-main">
                 <div class="header-left">
-                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-                        <span class="theme-icon">🌙</span>
-                    </button>
-                    <div class="logo">
+                    <a href="#" class="logo">
                         <img src="https://ik.imagekit.io/dee7studio/Logos/Gorilla%20Docs.svg?updatedAt=1752525553443" alt="Gorilla Docs" class="logo-img">
                         <span class="logo-text">Gorilla Docs</span>
-                    </div>
-                    <button class="mobile-toolbar-toggle" id="mobileToolbarToggle" aria-label="Toggle toolbar">
-                        <span>🛠️</span>
-                    </button>
+                    </a>
                 </div>
                 
-                <div class="header-center">
-                    <div class="toolbar-container" id="toolbar">
-                        <!-- Quill toolbar will be inserted here -->
+                <div class="header-center" id="toolbar-desktop-container">
                     </div>
-                </div>
                 
                 <div class="header-right">
+                    <button class="action-btn" id="themeToggle" aria-label="Toggle theme">
+                        <span class="theme-icon">🌙</span>
+                    </button>
                     <button class="action-btn" id="toggleEditor" aria-label="Toggle editor">
                         <span>📝</span>
                     </button>
@@ -46,11 +37,13 @@
                     <button class="action-btn" id="downloadBtn" aria-label="Download PDF">
                         <span>📄</span>
                     </button>
+                    <button class="action-btn mobile-only" id="mobileToolbarToggle" aria-label="Toggle toolbar">
+                        <span>🛠️</span>
+                    </button>
                 </div>
             </div>
         </header>
 
-        <!-- Main Content -->
         <main class="main-content">
             <div class="editor-container" id="editorContainer">
                 <div class="editor-wrapper">
@@ -58,7 +51,6 @@
                 </div>
             </div>
             
-            <!-- Analytics Sidebar -->
             <aside class="analytics-sidebar" id="analyticsSidebar">
                 <h3>Document Stats</h3>
                 <div class="stats-grid">
@@ -90,23 +82,18 @@
             </aside>
         </main>
 
-        <!-- Footer -->
         <footer class="footer">
             <p>Copyright © <span id="currentYear"></span> • Designed with ❤️ by <a href="https://dee7studio.com" target="_blank" rel="noopener noreferrer">Dee7 Studio</a></p>
         </footer>
     </div>
 
-    <!-- Mobile Toolbar -->
     <div class="mobile-toolbar" id="mobileToolbar">
         <div id="mobileToolbarContainer">
-            <!-- Mobile Quill toolbar will be inserted here -->
-        </div>
+            </div>
     </div>
 
-    <!-- Quill.js JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
     
-    <!-- Custom JavaScript -->
     <script src="js/app.js"></script>
 </body>
 </html>
