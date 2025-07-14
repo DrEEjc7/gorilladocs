@@ -1,444 +1,818 @@
-// Gorilla Docs - Rich Text Editor Application
-class GorillaDocsApp {
-    constructor() {
-        this.quill = null;
-        this.currentTheme = 'light';
-        this.editorHidden = false;
-        this.mobileToolbarVisible = false;
-        this.isMobile = window.innerWidth <= 768;
-        
-        this.init();
-    }
-
-    init() {
-        this.setupQuillEditor();
-        this.setupThemeToggle();
-        this.setupEventListeners();
-        this.updateCurrentYear();
-        this.initializeAnalytics();
-        this.handleResize();
-    }
-
-    setupQuillEditor() {
-        // Define custom toolbar
-        const toolbarOptions = [
-            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-            [{ 'font': [] }],
-            [{ 'size': ['small', false, 'large', 'huge'] }],
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ 'color': [] }, { 'background': [] }],
-            [{ 'script': 'sub'}, { 'script': 'super' }],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            [{ 'indent': '-1'}, { 'indent': '+1' }],
-            [{ 'align': [] }],
-            ['blockquote', 'code-block'],
-            ['link', 'image'],
-            ['clean']
-        ];
-
-        // Initialize Quill
-        this.quill = new Quill('#editor', {
-            theme: 'snow',
-            modules: {
-                toolbar: {
-                    container: toolbarOptions
-                }
-            },
-            placeholder: 'Start writing your document...'
-        });
-
-        this.setupToolbarForDevice();
-
-        // Listen for text changes
-        this.quill.on('text-change', () => {
-            this.updateAnalytics();
-        });
-    }
-
-    setupToolbarForDevice() {
-        const toolbar = document.querySelector('.ql-toolbar');
-        
-        if (this.isMobile) {
-            // Move toolbar to mobile container
-            const mobileContainer = document.getElementById('mobileToolbarContainer');
-            if (toolbar && mobileContainer) {
-                mobileContainer.appendChild(toolbar);
-            }
-        } else {
-            // Move toolbar to header
-            const desktopContainer = document.getElementById('toolbar');
-            if (toolbar && desktopContainer) {
-                desktopContainer.appendChild(toolbar);
-            }
-        }
-    }
-
-    setupThemeToggle() {
-        const themeToggle = document.getElementById('themeToggle');
-        
-        // Load saved theme or default to light
-        const savedTheme = localStorage.getItem('gorilla-docs-theme') || 'light';
-        this.setTheme(savedTheme);
-        
-        themeToggle.addEventListener('click', () => {
-            const newTheme = this.currentTheme === 'light' ? 'dark' : 'light';
-            this.setTheme(newTheme);
-        });
-    }
-
-    setTheme(theme) {
-        this.currentTheme = theme;
-        document.documentElement.setAttribute('data-theme', theme);
-        
-        const themeIcon = document.querySelector('.theme-icon');
-        themeIcon.textContent = theme === 'light' ? '🌙' : '☀️';
-        
-        // Save theme preference
-        localStorage.setItem('gorilla-docs-theme', theme);
-    }
-
-    setupEventListeners() {
-        // Toggle editor visibility
-        document.getElementById('toggleEditor').addEventListener('click', () => {
-            this.toggleEditor();
-        });
-
-        // Share functionality
-        document.getElementById('shareBtn').addEventListener('click', () => {
-            this.shareDocument();
-        });
-
-        // Download PDF functionality
-        document.getElementById('downloadBtn').addEventListener('click', () => {
-            this.downloadPDF();
-        });
-
-        // Mobile toolbar toggle
-        document.getElementById('mobileToolbarToggle').addEventListener('click', () => {
-            this.toggleMobileToolbar();
-        });
-
-        // Handle window resize for responsive behavior
-        window.addEventListener('resize', () => {
-            this.handleResize();
-        });
-
-        // Handle clicks outside mobile toolbar to close it
-        document.addEventListener('click', (e) => {
-            if (this.mobileToolbarVisible && 
-                !e.target.closest('.mobile-toolbar') && 
-                !e.target.closest('.mobile-toolbar-toggle')) {
-                this.hideMobileToolbar();
-            }
-        });
-
-        // Prevent mobile toolbar from closing when clicking inside it
-        document.getElementById('mobileToolbar').addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-    }
-
-    toggleEditor() {
-        const editorContainer = document.getElementById('editorContainer');
-        const toggleBtn = document.getElementById('toggleEditor');
-        
-        this.editorHidden = !this.editorHidden;
-        
-        if (this.editorHidden) {
-            editorContainer.classList.add('hidden');
-            toggleBtn.innerHTML = '<span>👁️</span>';
-            toggleBtn.setAttribute('aria-label', 'Show editor');
-        } else {
-            editorContainer.classList.remove('hidden');
-            toggleBtn.innerHTML = '<span>📝</span>';
-            toggleBtn.setAttribute('aria-label', 'Hide editor');
-        }
-    }
-
-    shareDocument() {
-        if (navigator.share) {
-            const content = this.quill.getText();
-            navigator.share({
-                title: 'Gorilla Docs - Document',
-                text: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
-                url: window.location.href
-            }).catch(console.error);
-        } else {
-            // Fallback: copy link to clipboard
-            navigator.clipboard.writeText(window.location.href).then(() => {
-                this.showNotification('Link copied to clipboard!');
-            }).catch(() => {
-                this.showNotification('Unable to copy link');
-            });
-        }
-    }
-
-    downloadPDF() {
-        // Simple HTML to PDF conversion using print
-        const content = this.quill.root.innerHTML;
-        const printWindow = window.open('', '_blank');
-        
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Gorilla Docs - Document</title>
-                <style>
-                    body { 
-                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                        line-height: 1.6;
-                        max-width: 800px;
-                        margin: 0 auto;
-                        padding: 2rem;
-                        color: #333;
-                    }
-                    h1, h2, h3, h4, h5, h6 { margin-top: 2rem; margin-bottom: 1rem; }
-                    p { margin-bottom: 1rem; }
-                    blockquote { 
-                        border-left: 4px solid #ccc;
-                        margin: 1rem 0;
-                        padding-left: 1rem;
-                        font-style: italic;
-                    }
-                    @media print {
-                        body { margin: 0; }
-                    }
-                </style>
-            </head>
-            <body>
-                ${content}
-            </body>
-            </html>
-        `);
-        
-        printWindow.document.close();
-        printWindow.focus();
-        
-        setTimeout(() => {
-            printWindow.print();
-            printWindow.close();
-        }, 250);
-    }
-
-    updateCurrentYear() {
-        const yearElement = document.getElementById('currentYear');
-        yearElement.textContent = new Date().getFullYear();
-    }
-
-    initializeAnalytics() {
-        this.updateAnalytics();
-    }
-
-    updateAnalytics() {
-        const text = this.quill.getText();
-        const html = this.quill.root.innerHTML;
-        
-        // Calculate statistics
-        const stats = this.calculateTextStats(text, html);
-        
-        // Update DOM elements
-        document.getElementById('wordCount').textContent = stats.words;
-        document.getElementById('charCount').textContent = stats.characters;
-        document.getElementById('readingTime').textContent = stats.readingTime;
-        document.getElementById('paragraphCount').textContent = stats.paragraphs;
-        
-        // Update readability score
-        const readabilityScore = this.calculateReadabilityScore(text);
-        const scoreElement = document.getElementById('readabilityScore');
-        scoreElement.querySelector('.score-value').textContent = readabilityScore.score;
-        scoreElement.title = readabilityScore.description;
-    }
-
-    calculateTextStats(text, html) {
-        // Remove extra whitespace and newlines
-        const cleanText = text.trim().replace(/\s+/g, ' ');
-        
-        // Calculate words (split by whitespace, filter empty strings)
-        const words = cleanText ? cleanText.split(/\s+/).filter(word => word.length > 0).length : 0;
-        
-        // Calculate characters (excluding whitespace)
-        const characters = cleanText.replace(/\s/g, '').length;
-        
-        // Calculate reading time (average 200 words per minute)
-        const readingTimeMinutes = Math.ceil(words / 200);
-        const readingTime = readingTimeMinutes === 0 ? '0 min' : 
-                          readingTimeMinutes === 1 ? '1 min' : 
-                          `${readingTimeMinutes} min`;
-        
-        // Calculate paragraphs (count <p> tags in HTML)
-        const paragraphs = (html.match(/<p>/g) || []).length || (cleanText ? 1 : 0);
-        
-        return {
-            words,
-            characters,
-            readingTime,
-            paragraphs
-        };
-    }
-
-    calculateReadabilityScore(text) {
-        if (!text || text.trim().length === 0) {
-            return { score: '-', description: 'No text to analyze' };
-        }
-
-        const cleanText = text.trim();
-        
-        // Count sentences (approximate by counting sentence endings)
-        const sentences = cleanText.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
-        
-        // Count words
-        const words = cleanText.split(/\s+/).filter(word => word.length > 0).length;
-        
-        // Count syllables (approximation)
-        const syllables = this.countSyllables(cleanText);
-        
-        if (sentences === 0 || words === 0) {
-            return { score: '-', description: 'Insufficient text for analysis' };
-        }
-        
-        // Flesch Reading Ease Score
-        const score = 206.835 - (1.015 * (words / sentences)) - (84.6 * (syllables / words));
-        
-        // Round and constrain score
-        const roundedScore = Math.max(0, Math.min(100, Math.round(score)));
-        
-        // Get description
-        const description = this.getReadabilityDescription(roundedScore);
-        
-        return { score: roundedScore, description };
-    }
-
-    countSyllables(text) {
-        // Simple syllable counting algorithm
-        const words = text.toLowerCase().split(/\s+/);
-        let totalSyllables = 0;
-        
-        words.forEach(word => {
-            // Remove punctuation
-            word = word.replace(/[^a-z]/g, '');
-            if (word.length === 0) return;
-            
-            // Count vowel groups
-            let syllables = word.match(/[aeiouy]+/g);
-            syllables = syllables ? syllables.length : 0;
-            
-            // Subtract silent e
-            if (word.endsWith('e')) syllables--;
-            
-            // Every word has at least one syllable
-            syllables = Math.max(1, syllables);
-            
-            totalSyllables += syllables;
-        });
-        
-        return totalSyllables;
-    }
-
-    getReadabilityDescription(score) {
-        if (score >= 90) return 'Very Easy';
-        if (score >= 80) return 'Easy';
-        if (score >= 70) return 'Fairly Easy';
-        if (score >= 60) return 'Standard';
-        if (score >= 50) return 'Fairly Difficult';
-        if (score >= 30) return 'Difficult';
-        return 'Very Difficult';
-    }
-
-    toggleMobileToolbar() {
-        if (this.mobileToolbarVisible) {
-            this.hideMobileToolbar();
-        } else {
-            this.showMobileToolbar();
-        }
-    }
-
-    showMobileToolbar() {
-        const mobileToolbar = document.getElementById('mobileToolbar');
-        const toggleBtn = document.getElementById('mobileToolbarToggle');
-        
-        mobileToolbar.classList.add('active');
-        toggleBtn.innerHTML = '<span>✕</span>';
-        this.mobileToolbarVisible = true;
-        
-        // Prevent body scroll when toolbar is open
-        document.body.style.overflow = 'hidden';
-    }
-
-    hideMobileToolbar() {
-        const mobileToolbar = document.getElementById('mobileToolbar');
-        const toggleBtn = document.getElementById('mobileToolbarToggle');
-        
-        mobileToolbar.classList.remove('active');
-        toggleBtn.innerHTML = '<span>🛠️</span>';
-        this.mobileToolbarVisible = false;
-        
-        // Restore body scroll
-        document.body.style.overflow = '';
-    }
-
-    handleResize() {
-        const wasMobile = this.isMobile;
-        this.isMobile = window.innerWidth <= 768;
-        
-        // If device type changed, move toolbar to appropriate container
-        if (wasMobile !== this.isMobile) {
-            this.setupToolbarForDevice();
-            
-            // Hide mobile toolbar if switching to desktop
-            if (!this.isMobile && this.mobileToolbarVisible) {
-                this.hideMobileToolbar();
-            }
-        }
-    }
-
-    showNotification(message) {
-        // Simple notification system with improved styling
-        const notification = document.createElement('div');
-        notification.textContent = message;
-        notification.style.cssText = `
-            position: fixed;
-            top: ${this.isMobile ? '80px' : '20px'};
-            right: 20px;
-            left: ${this.isMobile ? '20px' : 'auto'};
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            padding: 1rem 1.5rem;
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-xl);
-            z-index: 1000;
-            font-size: 0.875rem;
-            font-weight: 500;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            transform: translateX(${this.isMobile ? '0' : '20px'});
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        `;
-        
-        document.body.appendChild(notification);
-        
-        // Trigger animation
-        requestAnimationFrame(() => {
-            notification.style.transform = 'translateX(0)';
-            notification.style.opacity = '1';
-        });
-        
-        // Remove with animation
-        setTimeout(() => {
-            notification.style.transform = `translateX(${this.isMobile ? '0' : '20px'})`;
-            notification.style.opacity = '0';
-            
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 300);
-        }, 3000);
-    }
+/* CSS Custom Properties for Theme */
+:root {
+  /* Light mode colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #fafbfc;
+  --bg-tertiary: #f1f3f4;
+  --text-primary: #1a1a1a;
+  --text-secondary: #666666;
+  --text-muted: #9ca3af;
+  --border-color: #e5e7eb;
+  --border-light: #f3f4f6;
+  --accent-color: #374151;
+  --button-hover: #f9fafb;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.02);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.08), 0 4px 6px rgba(0, 0, 0, 0.02);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
 }
 
-// Initialize the application when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    new GorillaDocsApp();
-});
+[data-theme="dark"] {
+  /* Dark mode colors */
+  --bg-primary: #0f0f0f;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #262626;
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --border-color: #27272a;
+  --border-light: #3f3f46;
+  --accent-color: #d1d5db;
+  --button-hover: #262626;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4), 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.5), 0 10px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Reset and Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-feature-settings: 'rlig' 1, 'calt' 1, 'ss01' 1;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  font-size: 16px;
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+/* Header Styles */
+.header {
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow);
+}
+
+.header-main {
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.theme-toggle {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle:hover {
+  background-color: var(--button-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.theme-toggle:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+  transition: opacity 0.2s ease;
+}
+
+.logo:hover {
+  opacity: 0.8;
+}
+
+.logo-img {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+}
+
+.logo-text {
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  max-width: 600px;
+  margin: 0 2rem;
+}
+
+.toolbar-container {
+  width: 100%;
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.mobile-toolbar-toggle {
+  display: none;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--text-primary);
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.mobile-toolbar-toggle:hover {
+  background-color: var(--button-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.header-right {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.action-btn:hover {
+  background-color: var(--button-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.action-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.action-btn:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  transition: left 0.5s;
+}
+
+.action-btn:hover:before {
+  left: 100%;
+}
+
+/* Main Content */
+.main-content {
+  flex: 1;
+  display: flex;
+  gap: 2rem;
+  padding: 2rem 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.editor-container {
+  flex: 1;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.editor-wrapper {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.editor-wrapper:hover {
+  box-shadow: var(--shadow-xl);
+}
+
+.editor-wrapper:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-light), transparent);
+}
+
+#editor {
+  min-height: 600px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  padding: 2rem;
+  font-size: 16px;
+  line-height: 1.8;
+  letter-spacing: -0.01em;
+}
+
+/* Analytics Sidebar */
+.analytics-sidebar {
+  width: 300px;
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  height: fit-content;
+  position: sticky;
+  top: 140px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.analytics-sidebar:hover {
+  box-shadow: var(--shadow-xl);
+}
+
+.analytics-sidebar h3 {
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-item:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-color), var(--text-secondary));
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.stat-item:hover:before {
+  opacity: 1;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.readability-section h4 {
+  margin-bottom: 1rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.readability-score {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.readability-score:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.score-value {
+  display: block;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--accent-color);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.03em;
+}
+
+.score-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+/* Footer */
+.footer {
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-top: auto;
+}
+
+.footer a {
+  color: var(--accent-color);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.footer a:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Quill Editor Customization */
+.ql-toolbar {
+  background-color: var(--bg-secondary) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  padding: 1rem 1.5rem !important;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+}
+
+.ql-toolbar .ql-formats {
+  margin-right: 1rem !important;
+}
+
+.ql-toolbar .ql-formats:last-child {
+  margin-right: 0 !important;
+}
+
+.ql-toolbar button {
+  border-radius: var(--radius-sm) !important;
+  padding: 0.5rem !important;
+  margin: 0 2px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.ql-toolbar button:hover {
+  background-color: var(--button-hover) !important;
+  transform: translateY(-1px) !important;
+}
+
+.ql-toolbar button.ql-active {
+  background-color: var(--accent-color) !important;
+  color: var(--bg-primary) !important;
+}
+
+.ql-toolbar .ql-stroke {
+  fill: none;
+  stroke: var(--text-primary) !important;
+  transition: stroke 0.2s ease !important;
+}
+
+.ql-toolbar .ql-fill {
+  fill: var(--text-primary) !important;
+  stroke: none;
+  transition: fill 0.2s ease !important;
+}
+
+.ql-toolbar .ql-picker-label {
+  color: var(--text-primary) !important;
+  transition: color 0.2s ease !important;
+}
+
+.ql-toolbar .ql-picker-options {
+  background-color: var(--bg-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.ql-toolbar .ql-picker-item:hover {
+  background-color: var(--bg-secondary) !important;
+}
+
+.ql-editor {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border: none !important;
+  font-size: 16px !important;
+  line-height: 1.8 !important;
+  letter-spacing: -0.01em !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+.ql-editor.ql-blank::before {
+  color: var(--text-muted) !important;
+  font-style: italic;
+  opacity: 0.6;
+}
+
+.ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4, .ql-editor h5, .ql-editor h6 {
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  margin: 1.5em 0 0.5em 0 !important;
+}
+
+.ql-editor h1 { font-size: 2.25rem !important; }
+.ql-editor h2 { font-size: 1.875rem !important; }
+.ql-editor h3 { font-size: 1.5rem !important; }
+.ql-editor h4 { font-size: 1.25rem !important; }
+.ql-editor h5 { font-size: 1.125rem !important; }
+.ql-editor h6 { font-size: 1rem !important; }
+
+.ql-editor p {
+  margin: 1em 0 !important;
+}
+
+.ql-editor blockquote {
+  border-left: 4px solid var(--accent-color) !important;
+  padding-left: 1rem !important;
+  margin: 1.5rem 0 !important;
+  font-style: italic !important;
+  color: var(--text-secondary) !important;
+  background-color: var(--bg-secondary) !important;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0 !important;
+  padding: 1rem !important;
+  padding-left: 1.5rem !important;
+}
+
+/* Mobile Toolbar */
+.mobile-toolbar {
+  display: none;
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  padding: 1rem;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-lg);
+}
+
+.mobile-toolbar.active {
+  transform: translateY(0);
+}
+
+.mobile-toolbar .ql-toolbar {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.5rem !important;
+  justify-content: center !important;
+}
+
+.mobile-toolbar .ql-formats {
+  margin: 0 !important;
+}
+
+.mobile-toolbar button {
+  min-width: 44px !important;
+  min-height: 44px !important;
+  border-radius: var(--radius) !important;
+  background-color: var(--bg-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .main-content {
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+  
+  .analytics-sidebar {
+    width: 100%;
+    position: static;
+    order: 2;
+    padding: 1.5rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+  }
+  
+  .stat-item {
+    padding: 1rem 0.75rem;
+  }
+  
+  .stat-value {
+    font-size: 1.25rem;
+  }
+  
+  .readability-score {
+    padding: 1.5rem;
+  }
+  
+  .score-value {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-main {
+    padding: 1rem;
+  }
+  
+  .header-center {
+    display: none;
+  }
+  
+  .mobile-toolbar-toggle {
+    display: flex !important;
+  }
+  
+  .toolbar-container {
+    display: none;
+  }
+  
+  .mobile-toolbar {
+    display: block;
+  }
+  
+  .logo-text {
+    display: none;
+  }
+  
+  .main-content {
+    padding: 1rem;
+    padding-bottom: 100px; /* Space for mobile toolbar */
+  }
+  
+  .editor-wrapper {
+    border-radius: var(--radius-lg);
+  }
+  
+  #editor {
+    padding: 1.5rem;
+    min-height: 400px;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  
+  .analytics-sidebar {
+    border-radius: var(--radius-lg);
+    margin-bottom: 1rem;
+  }
+  
+  .analytics-sidebar h3 {
+    font-size: 1.125rem;
+    margin-bottom: 1rem;
+  }
+  
+  .readability-score {
+    padding: 1.25rem;
+  }
+  
+  .score-value {
+    font-size: 1.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-main {
+    padding: 0.75rem;
+  }
+  
+  .header-left {
+    gap: 0.75rem;
+  }
+  
+  .header-right {
+    gap: 0.5rem;
+  }
+  
+  .action-btn, .theme-toggle, .mobile-toolbar-toggle {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  
+  .main-content {
+    padding: 0.75rem;
+    gap: 1rem;
+  }
+  
+  .analytics-sidebar {
+    padding: 1rem;
+  }
+  
+  .stats-grid {
+    gap: 0.75rem;
+  }
+  
+  .stat-item {
+    padding: 0.75rem 0.5rem;
+  }
+  
+  .stat-value {
+    font-size: 1.125rem;
+  }
+  
+  .stat-label {
+    font-size: 0.6875rem;
+  }
+  
+  #editor {
+    padding: 1rem;
+    font-size: 16px;
+  }
+  
+  .mobile-toolbar {
+    padding: 0.75rem;
+  }
+  
+  .mobile-toolbar button {
+    min-width: 40px !important;
+    min-height: 40px !important;
+  }
+}
+
+/* Focus states for accessibility */
+@media (hover: none) and (pointer: coarse) {
+  .action-btn:hover,
+  .theme-toggle:hover,
+  .stat-item:hover,
+  .readability-score:hover {
+    transform: none;
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border-color: #666666;
+    --text-secondary: #444444;
+  }
+  
+  [data-theme="dark"] {
+    --border-color: #999999;
+    --text-secondary: #cccccc;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Hidden state for editor toggle */
+.editor-container.hidden {
+  display: none;
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Loading states */
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+/* Focus ring improvements */
+button:focus-visible,
+.action-btn:focus-visible,
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* Selection styling */
+::selection {
+  background-color: var(--accent-color);
+  color: var(--bg-primary);
+}
