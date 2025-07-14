@@ -4,6 +4,8 @@ class GorillaDocsApp {
         this.quill = null;
         this.currentTheme = 'light';
         this.editorHidden = false;
+        this.mobileToolbarVisible = false;
+        this.isMobile = window.innerWidth <= 768;
         
         this.init();
     }
@@ -14,6 +16,7 @@ class GorillaDocsApp {
         this.setupEventListeners();
         this.updateCurrentYear();
         this.initializeAnalytics();
+        this.handleResize();
     }
 
     setupQuillEditor() {
@@ -44,12 +47,7 @@ class GorillaDocsApp {
             placeholder: 'Start writing your document...'
         });
 
-        // Move toolbar to header
-        const toolbar = document.querySelector('.ql-toolbar');
-        const toolbarContainer = document.getElementById('toolbar');
-        if (toolbar && toolbarContainer) {
-            toolbarContainer.appendChild(toolbar);
-        }
+        this.setupToolbarForDevice();
 
         // Listen for text changes
         this.quill.on('text-change', () => {
@@ -57,9 +55,26 @@ class GorillaDocsApp {
         });
     }
 
+    setupToolbarForDevice() {
+        const toolbar = document.querySelector('.ql-toolbar');
+        
+        if (this.isMobile) {
+            // Move toolbar to mobile container
+            const mobileContainer = document.getElementById('mobileToolbarContainer');
+            if (toolbar && mobileContainer) {
+                mobileContainer.appendChild(toolbar);
+            }
+        } else {
+            // Move toolbar to header
+            const desktopContainer = document.getElementById('toolbar');
+            if (toolbar && desktopContainer) {
+                desktopContainer.appendChild(toolbar);
+            }
+        }
+    }
+
     setupThemeToggle() {
         const themeToggle = document.getElementById('themeToggle');
-        const themeIcon = themeToggle.querySelector('.theme-icon');
         
         // Load saved theme or default to light
         const savedTheme = localStorage.getItem('gorilla-docs-theme') || 'light';
@@ -98,9 +113,28 @@ class GorillaDocsApp {
             this.downloadPDF();
         });
 
-        // Handle window resize for responsive analytics
+        // Mobile toolbar toggle
+        document.getElementById('mobileToolbarToggle').addEventListener('click', () => {
+            this.toggleMobileToolbar();
+        });
+
+        // Handle window resize for responsive behavior
         window.addEventListener('resize', () => {
             this.handleResize();
+        });
+
+        // Handle clicks outside mobile toolbar to close it
+        document.addEventListener('click', (e) => {
+            if (this.mobileToolbarVisible && 
+                !e.target.closest('.mobile-toolbar') && 
+                !e.target.closest('.mobile-toolbar-toggle')) {
+                this.hideMobileToolbar();
+            }
+        });
+
+        // Prevent mobile toolbar from closing when clicking inside it
+        document.getElementById('mobileToolbar').addEventListener('click', (e) => {
+            e.stopPropagation();
         });
     }
 
@@ -310,33 +344,96 @@ class GorillaDocsApp {
         return 'Very Difficult';
     }
 
+    toggleMobileToolbar() {
+        if (this.mobileToolbarVisible) {
+            this.hideMobileToolbar();
+        } else {
+            this.showMobileToolbar();
+        }
+    }
+
+    showMobileToolbar() {
+        const mobileToolbar = document.getElementById('mobileToolbar');
+        const toggleBtn = document.getElementById('mobileToolbarToggle');
+        
+        mobileToolbar.classList.add('active');
+        toggleBtn.innerHTML = '<span>✕</span>';
+        this.mobileToolbarVisible = true;
+        
+        // Prevent body scroll when toolbar is open
+        document.body.style.overflow = 'hidden';
+    }
+
+    hideMobileToolbar() {
+        const mobileToolbar = document.getElementById('mobileToolbar');
+        const toggleBtn = document.getElementById('mobileToolbarToggle');
+        
+        mobileToolbar.classList.remove('active');
+        toggleBtn.innerHTML = '<span>🛠️</span>';
+        this.mobileToolbarVisible = false;
+        
+        // Restore body scroll
+        document.body.style.overflow = '';
+    }
+
     handleResize() {
-        // Handle any resize-specific logic here
-        // Currently just ensuring the editor stays responsive
+        const wasMobile = this.isMobile;
+        this.isMobile = window.innerWidth <= 768;
+        
+        // If device type changed, move toolbar to appropriate container
+        if (wasMobile !== this.isMobile) {
+            this.setupToolbarForDevice();
+            
+            // Hide mobile toolbar if switching to desktop
+            if (!this.isMobile && this.mobileToolbarVisible) {
+                this.hideMobileToolbar();
+            }
+        }
     }
 
     showNotification(message) {
-        // Simple notification system
+        // Simple notification system with improved styling
         const notification = document.createElement('div');
         notification.textContent = message;
         notification.style.cssText = `
             position: fixed;
-            top: 20px;
+            top: ${this.isMobile ? '80px' : '20px'};
             right: 20px;
-            background: var(--bg-secondary);
+            left: ${this.isMobile ? '20px' : 'auto'};
+            background: var(--bg-primary);
             color: var(--text-primary);
             padding: 1rem 1.5rem;
-            border-radius: 6px;
+            border-radius: var(--radius-lg);
             border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-lg);
+            box-shadow: var(--shadow-xl);
             z-index: 1000;
-            font-size: 0.9rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            transform: translateX(${this.isMobile ? '0' : '20px'});
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         `;
         
         document.body.appendChild(notification);
         
+        // Trigger animation
+        requestAnimationFrame(() => {
+            notification.style.transform = 'translateX(0)';
+            notification.style.opacity = '1';
+        });
+        
+        // Remove with animation
         setTimeout(() => {
-            notification.remove();
+            notification.style.transform = `translateX(${this.isMobile ? '0' : '20px'})`;
+            notification.style.opacity = '0';
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
         }, 3000);
     }
 }
