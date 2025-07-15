@@ -57,31 +57,38 @@ class GorillaDocsApp {
             ['blockquote', 'code-block'],
             
             ['link', 'image', 'video'],
+
+            [{ 'table': [] }], // Table button
             
             ['clean']
         ];
 
         try {
-    // NEW: Register the resize module with Quill
-    Quill.register('modules/resize', QuillResize);
+            // Register all the new modules
+            Quill.register('modules/resize', QuillResize);
+            Quill.register({ 'modules/tableUI': QuillTableUI }, true);
+            registerQuillLanguageTool(Quill);
 
-    // Initialize Quill
-    this.quill = new Quill('#editor', {
-        theme: 'snow',
-        modules: {
-            toolbar: {
-                container: toolbarOptions,
-                handlers: {
-                    'image': this.imageHandler
-                }
-            },
-            // ADD THIS
-            resize: {
-                // You can add options here if needed, but defaults are fine
-            }
-        },
-        placeholder: 'Start writing your document...'
-    });
+
+            // Initialize Quill with all modules
+            this.quill = new Quill('#editor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: {
+                        container: toolbarOptions,
+                        handlers: {
+                            'image': this.imageHandler
+                        }
+                    },
+                    resize: {}, // Image and video resize
+                    syntax: true, // Syntax highlighting
+                    table: true, // Table support
+                    tableUI: true, // Table UI
+                    languageTool: {} // Spell checking
+                },
+                placeholder: 'Start writing your document...'
+            });
+
             // Listen for text changes with debouncing
             this.quill.on('text-change', this.debounce(this.updateAnalytics, 300));
 
