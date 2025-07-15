@@ -4,11 +4,8 @@ class GorillaDocsApp {
         this.quill = null;
         this.currentTheme = 'light';
         this.editorHidden = false;
-        this.isMobile = false;
-        this.isLoading = false;
         
         // Bind methods to maintain context
-        this.handleResize = this.handleResize.bind(this);
         this.updateAnalytics = this.updateAnalytics.bind(this);
         this.imageHandler = this.imageHandler.bind(this);
         
@@ -18,9 +15,6 @@ class GorillaDocsApp {
     async init() {
         try {
             this.showLoading();
-            
-            // Check device type
-            this.checkDeviceType();
             
             // Initialize components
             await this.setupQuillEditor();
@@ -37,17 +31,13 @@ class GorillaDocsApp {
         }
     }
 
-    checkDeviceType() {
-        this.isMobile = window.innerWidth <= 768;
-    }
-
     async setupQuillEditor() {
         // Check if Quill is available
         if (typeof Quill === 'undefined') {
             throw new Error('Quill.js library not loaded');
         }
 
-        // Extended toolbar options
+        // Extended toolbar options - using Quill's format
         const toolbarOptions = [
             [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
             [{ 'font': [] }],
@@ -71,69 +61,27 @@ class GorillaDocsApp {
             ['clean']
         ];
 
-        // Mobile toolbar - simplified
-        const mobileToolbarOptions = [
-            [{ 'header': [1, 2, 3, false] }],
-            ['bold', 'italic', 'underline'],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            ['link', 'image'],
-            ['clean']
-        ];
-
-        // Initialize Quill with proper error handling
         try {
-            const editorElement = document.getElementById('editor');
-            if (!editorElement) {
-                throw new Error('Editor element not found');
-            }
-
-            // Use appropriate toolbar based on device
-            const toolbar = this.isMobile ? mobileToolbarOptions : toolbarOptions;
-
+            // Initialize Quill - simple and clean
             this.quill = new Quill('#editor', {
                 theme: 'snow',
                 modules: {
                     toolbar: {
-                        container: toolbar,
+                        container: toolbarOptions,
                         handlers: {
                             'image': this.imageHandler
                         }
                     }
                 },
-                placeholder: 'Start writing your document...',
-                bounds: document.body // Changed to document.body for better dropdown positioning
+                placeholder: 'Start writing your document...'
             });
-
-            // Position toolbar properly
-            this.positionToolbar();
 
             // Listen for text changes with debouncing
             this.quill.on('text-change', this.debounce(this.updateAnalytics, 300));
-            
-            // Handle editor focus
-            this.quill.on('selection-change', (range) => {
-                if (range) {
-                    // Ensure toolbar stays visible when editing
-                    const toolbar = document.querySelector('.ql-toolbar');
-                    if (toolbar) {
-                        toolbar.style.visibility = 'visible';
-                    }
-                }
-            });
 
         } catch (error) {
             console.error('Failed to initialize Quill editor:', error);
             throw new Error('Editor initialization failed');
-        }
-    }
-
-    positionToolbar() {
-        const toolbar = document.querySelector('.ql-toolbar');
-        if (!toolbar) return;
-
-        const toolbarContainer = document.getElementById('toolbar');
-        if (toolbarContainer && toolbar.parentNode !== toolbarContainer) {
-            toolbarContainer.appendChild(toolbar);
         }
     }
 
@@ -213,9 +161,6 @@ class GorillaDocsApp {
         this.addEventListenerSafely('toggleEditor', 'click', () => this.toggleEditor());
         this.addEventListenerSafely('shareBtn', 'click', () => this.shareDocument());
         this.addEventListenerSafely('downloadBtn', 'click', () => this.downloadPDF());
-
-        // Global event listeners
-        window.addEventListener('resize', this.handleResize);
         
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -225,49 +170,15 @@ class GorillaDocsApp {
                         e.preventDefault();
                         this.downloadPDF();
                         break;
-                    case 'b':
-                        e.preventDefault();
-                        this.quill.format('bold', !this.quill.getFormat().bold);
-                        break;
-                    case 'i':
-                        e.preventDefault();
-                        this.quill.format('italic', !this.quill.getFormat().italic);
-                        break;
-                    case 'u':
-                        e.preventDefault();
-                        this.quill.format('underline', !this.quill.getFormat().underline);
-                        break;
                 }
             }
         });
-
-        // Prevent toolbar from hiding when clicking header
-        const header = document.querySelector('.header');
-        if (header) {
-            header.addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
-        }
     }
 
     addEventListenerSafely(elementId, event, handler) {
         const element = document.getElementById(elementId);
         if (element) {
             element.addEventListener(event, handler);
-        }
-    }
-
-    handleResize() {
-        const wasMobile = this.isMobile;
-        this.checkDeviceType();
-        
-        // If device type changed, reinitialize toolbar
-        if (wasMobile !== this.isMobile) {
-            // Destroy and recreate Quill with appropriate toolbar
-            const content = this.quill.root.innerHTML;
-            this.quill = null;
-            document.getElementById('editor').innerHTML = content;
-            this.setupQuillEditor();
         }
     }
 
@@ -296,7 +207,7 @@ class GorillaDocsApp {
         const text = content.substring(0, 280) + (content.length > 280 ? '...' : '');
         
         try {
-            if (navigator.share && this.isMobile) {
+            if (navigator.share) {
                 await navigator.share({
                     title,
                     text,
@@ -466,7 +377,7 @@ class GorillaDocsApp {
         // Character count excluding whitespace
         const characters = cleanText.replace(/\s/g, '').length;
         
-        // Better paragraph counting using Quill's line breaks
+        // Better paragraph counting
         const paragraphs = cleanText ? Math.max(1, (cleanText.split(/\n\s*\n/).filter(p => p.trim().length > 0).length)) : 0;
         
         // Reading time calculation (200 words per minute average)
@@ -541,7 +452,6 @@ class GorillaDocsApp {
     }
 
     showLoading() {
-        this.isLoading = true;
         const overlay = document.getElementById('loadingOverlay');
         if (overlay) {
             overlay.classList.add('active');
@@ -549,7 +459,6 @@ class GorillaDocsApp {
     }
 
     hideLoading() {
-        this.isLoading = false;
         const overlay = document.getElementById('loadingOverlay');
         if (overlay) {
             overlay.classList.remove('active');
@@ -569,9 +478,8 @@ class GorillaDocsApp {
         
         notification.style.cssText = `
             position: fixed;
-            top: ${this.isMobile ? '80px' : '20px'};
+            top: 20px;
             right: 20px;
-            left: ${this.isMobile ? '20px' : 'auto'};
             background: var(--bg-elevated);
             color: var(--text-primary);
             border: 1px solid var(--border-primary);
@@ -584,7 +492,7 @@ class GorillaDocsApp {
             font-weight: 500;
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            transform: translateX(${this.isMobile ? '0' : '20px'});
+            transform: translateX(20px);
             opacity: 0;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             max-width: 400px;
@@ -600,7 +508,7 @@ class GorillaDocsApp {
         
         // Auto-remove notification
         setTimeout(() => {
-            notification.style.transform = `translateX(${this.isMobile ? '0' : '20px'})`;
+            notification.style.transform = 'translateX(20px)';
             notification.style.opacity = '0';
             
             setTimeout(() => {
@@ -622,15 +530,6 @@ class GorillaDocsApp {
             clearTimeout(timeout);
             timeout = setTimeout(later, wait);
         };
-    }
-
-    // Cleanup method for when the app is destroyed
-    destroy() {
-        window.removeEventListener('resize', this.handleResize);
-        
-        if (this.quill) {
-            this.quill = null;
-        }
     }
 }
 
