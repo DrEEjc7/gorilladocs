@@ -11,8 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Quill.js CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.css" rel="stylesheet">
+    <!-- Quill.js 2.0.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/main.css">
@@ -30,7 +30,7 @@
                 </div>
                 
                 <div class="header-center">
-                    <!-- Toolbar moved to above editor -->
+                    <!-- Empty for now -->
                 </div>
                 
                 <div class="header-right">
@@ -46,9 +46,6 @@
                     <button class="action-btn" id="downloadBtn" aria-label="Download PDF">
                         <span>📄</span>
                     </button>
-                    <button class="action-btn mobile-only" id="mobileToolbarToggle" aria-label="Toggle toolbar">
-                        <span>🛠️</span>
-                    </button>
                 </div>
             </div>
         </header>
@@ -57,13 +54,16 @@
         <main class="main-content">
             <div class="content-wrapper">
                 <div class="editor-container" id="editorContainer">
-                    <!-- Desktop Toolbar above editor -->
-                    <div class="toolbar-container desktop-only" id="desktopToolbar">
-                        <!-- Desktop Quill toolbar will be inserted here -->
+                    <!-- Toolbar Container -->
+                    <div class="toolbar-container" id="toolbar">
+                        <!-- Quill toolbar will be auto-generated here -->
                     </div>
                     
                     <div class="editor-wrapper">
-                        <div id="editor"></div>
+                        <div id="editor">
+                            <h1>Welcome to Gorilla Docs</h1>
+                            <p>Start writing your document here...</p>
+                        </div>
                     </div>
                 </div>
                 
@@ -109,26 +109,16 @@
         </footer>
     </div>
 
-    <!-- Mobile Toolbar -->
-    <div class="mobile-toolbar" id="mobileToolbar">
-        <div class="mobile-toolbar-content">
-            <div class="mobile-toolbar-header">
-                <span>Formatting Tools</span>
-                <button class="close-toolbar" id="closeMobileToolbar" aria-label="Close toolbar">✕</button>
-            </div>
-            <div id="mobileToolbarContainer">
-                <!-- Mobile Quill toolbar will be inserted here -->
-            </div>
-        </div>
-    </div>
-
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner"></div>
     </div>
 
-    <!-- Quill.js JavaScript -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
+    <!-- Hidden file input for image upload -->
+    <input type="file" id="imageInput" accept="image/*" style="display: none;">
+
+    <!-- Quill.js 2.0.3 JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
     
     <!-- Custom JavaScript -->
     <script src="js/app.js"></script>
