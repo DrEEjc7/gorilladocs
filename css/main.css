@@ -204,15 +204,6 @@ body {
   outline-offset: 2px;
 }
 
-/* Visibility utilities */
-.desktop-only {
-  display: block;
-}
-
-.mobile-only {
-  display: none;
-}
-
 /* Main Content */
 .main-content {
   flex: 1;
@@ -242,7 +233,9 @@ body {
   border-bottom: none;
   overflow: hidden;
   width: 100%;
-  margin-bottom: 0;
+  position: sticky;
+  top: 64px;
+  z-index: 50;
 }
 
 .editor-wrapper {
@@ -396,7 +389,7 @@ body {
   border: none !important;
   border-bottom: 1px solid #e8e8e8 !important;
   padding: var(--space-md) var(--space-lg) !important;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+  border-radius: 0 !important;
 }
 
 .ql-toolbar .ql-formats {
@@ -409,16 +402,18 @@ body {
 
 .ql-toolbar button {
   border-radius: var(--radius-sm) !important;
-  padding: var(--space-sm) !important;
-  margin: 0 2px !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  width: 32px !important;
-  height: 32px !important;
+  padding: 3px !important;
+  margin: 0 1px !important;
+  transition: background-color 0.2s ease !important;
+  width: auto !important;
+  height: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .ql-toolbar button:hover {
   background-color: var(--bg-tertiary) !important;
-  transform: translateY(-1px) !important;
 }
 
 .ql-toolbar button.ql-active {
@@ -426,31 +421,66 @@ body {
   color: white !important;
 }
 
-.ql-toolbar .ql-stroke {
-  fill: none;
-  stroke: var(--text-secondary) !important;
-  transition: stroke 0.2s ease !important;
-}
-
-.ql-toolbar .ql-fill {
-  fill: var(--text-secondary) !important;
-  stroke: none;
-  transition: fill 0.2s ease !important;
+.ql-toolbar .ql-picker {
+  height: auto !important;
 }
 
 .ql-toolbar .ql-picker-label {
+  padding: 3px 5px !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--radius-sm) !important;
   color: var(--text-secondary) !important;
-  transition: color 0.2s ease !important;
+  transition: all 0.2s ease !important;
 }
 
-.ql-toolbar button:hover .ql-stroke,
-.ql-toolbar button:hover .ql-fill {
+.ql-toolbar .ql-picker-label:hover {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Quill specific styling for icons and SVGs */
+.ql-toolbar .ql-stroke {
+  fill: none !important;
+  stroke: var(--text-secondary) !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  stroke-width: 2 !important;
+}
+
+.ql-toolbar .ql-fill,
+.ql-toolbar .ql-stroke.ql-fill {
+  fill: var(--text-secondary) !important;
+  stroke: none !important;
+}
+
+.ql-toolbar .ql-even {
+  fill-rule: evenodd !important;
+}
+
+.ql-toolbar button:hover .ql-stroke {
   stroke: var(--text-primary) !important;
+}
+
+.ql-toolbar button:hover .ql-fill,
+.ql-toolbar button:hover .ql-stroke.ql-fill {
   fill: var(--text-primary) !important;
 }
 
-.ql-toolbar button:hover .ql-picker-label {
-  color: var(--text-primary) !important;
+.ql-toolbar button.ql-active .ql-stroke {
+  stroke: white !important;
+}
+
+.ql-toolbar button.ql-active .ql-fill,
+.ql-toolbar button.ql-active .ql-stroke.ql-fill {
+  fill: white !important;
+}
+
+.ql-toolbar .ql-picker-label .ql-stroke {
+  stroke: var(--text-secondary) !important;
+}
+
+.ql-toolbar .ql-picker-label:hover .ql-stroke {
+  stroke: var(--text-primary) !important;
 }
 
 .ql-toolbar .ql-picker-options {
@@ -458,10 +488,18 @@ body {
   border: 1px solid var(--border-primary) !important;
   border-radius: var(--radius) !important;
   box-shadow: var(--shadow-lg) !important;
+  padding: var(--space-xs) !important;
+}
+
+.ql-toolbar .ql-picker-item {
+  padding: var(--space-xs) var(--space-sm) !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--text-secondary) !important;
 }
 
 .ql-toolbar .ql-picker-item:hover {
-  background-color: var(--bg-secondary) !important;
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
 }
 
 .ql-editor {
@@ -505,88 +543,6 @@ body {
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0 !important;
   padding: var(--space-lg) !important;
   padding-left: var(--space-xl) !important;
-}
-
-/* Mobile Toolbar */
-.mobile-toolbar {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: var(--bg-elevated);
-  border-top: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-xl);
-  z-index: 200;
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-
-.mobile-toolbar.active {
-  transform: translateY(0);
-}
-
-.mobile-toolbar-content {
-  padding: var(--space-lg);
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.mobile-toolbar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-md);
-  padding-bottom: var(--space-md);
-  border-bottom: 1px solid var(--border-secondary);
-}
-
-.mobile-toolbar-header span {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: var(--font-size-sm);
-}
-
-.close-toolbar {
-  background: transparent;
-  border: none;
-  font-size: var(--font-size-lg);
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: var(--space-xs);
-  border-radius: var(--radius);
-  transition: all 0.2s ease;
-}
-
-.close-toolbar:hover {
-  color: var(--text-primary);
-  background-color: var(--bg-secondary);
-}
-
-#mobileToolbarContainer .ql-toolbar {
-  background: transparent !important;
-  border: none !important;
-  padding: 0 !important;
-  border-radius: 0 !important;
-  display: flex !important;
-  flex-wrap: wrap !important;
-  gap: var(--space-sm) !important;
-  justify-content: center !important;
-}
-
-#mobileToolbarContainer .ql-toolbar button {
-  min-width: 44px !important;
-  min-height: 44px !important;
-  border-radius: var(--radius) !important;
-  background-color: var(--bg-secondary) !important;
-  border: 1px solid var(--border-secondary) !important;
-  margin: 0 !important;
-}
-
-#mobileToolbarContainer .ql-toolbar .ql-formats {
-  margin: 0 !important;
 }
 
 /* Loading Overlay */
@@ -662,37 +618,51 @@ body {
     display: none;
   }
   
-  .desktop-only {
-    display: none !important;
-  }
-  
-  .mobile-only {
-    display: flex !important;
-  }
-  
-  .mobile-toolbar {
-    display: block;
-  }
-  
   .main-content {
     padding: var(--space-lg) var(--space-md);
-    padding-bottom: 100px; /* Space for mobile toolbar */
   }
   
   .content-wrapper {
     gap: var(--space-lg);
   }
   
+  .toolbar-container {
+    position: relative;
+    top: 0;
+  }
+  
+  .ql-toolbar {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding: var(--space-sm) !important;
+  }
+  
+  .ql-toolbar::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .ql-toolbar::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 2px;
+  }
+  
+  .ql-toolbar .ql-formats {
+    display: inline-flex !important;
+    flex-wrap: nowrap !important;
+    margin-right: var(--space-sm) !important;
+  }
+  
   .editor-wrapper {
-    border-radius: var(--radius-lg);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
     border: 1px solid #e8e8e8;
+    border-top: none;
   }
   
   #editor {
     padding: var(--space-lg);
     min-height: 400px;
     font-size: 16px; /* Prevent zoom on iOS */
-    border-radius: var(--radius-lg);
   }
   
   .stats-grid {
@@ -702,8 +672,6 @@ body {
   
   .analytics-sidebar {
     padding: var(--space-lg);
-    border-radius: var(--radius-lg);
-    border: 1px solid #e8e8e8;
   }
   
   .action-btn {
@@ -724,12 +692,10 @@ body {
   
   .main-content {
     padding: var(--space-md) var(--space-sm);
-    padding-bottom: 100px; /* Space for mobile toolbar */
   }
   
   .analytics-sidebar {
     padding: var(--space-md);
-    border: 1px solid #e8e8e8;
   }
   
   .stats-grid {
