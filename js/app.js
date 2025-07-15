@@ -96,7 +96,7 @@ class GorillaDocsApp {
                 mobileContainer.appendChild(toolbar);
             }
         } else {
-            // Move to desktop container
+            // Move to desktop container above editor
             const desktopContainer = document.getElementById('desktopToolbar');
             if (desktopContainer && !desktopContainer.contains(toolbar)) {
                 desktopContainer.appendChild(toolbar);
