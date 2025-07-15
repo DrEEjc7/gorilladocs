@@ -4,14 +4,13 @@ class GorillaDocsApp {
         this.quill = null;
         this.currentTheme = 'light';
         this.editorHidden = false;
-        this.mobileToolbarVisible = false;
         this.isMobile = false;
         this.isLoading = false;
         
         // Bind methods to maintain context
         this.handleResize = this.handleResize.bind(this);
-        this.handleClickOutside = this.handleClickOutside.bind(this);
         this.updateAnalytics = this.updateAnalytics.bind(this);
+        this.imageHandler = this.imageHandler.bind(this);
         
         this.init();
     }
@@ -48,12 +47,36 @@ class GorillaDocsApp {
             throw new Error('Quill.js library not loaded');
         }
 
-        // Simplified toolbar for better mobile experience
+        // Extended toolbar options
         const toolbarOptions = [
+            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+            [{ 'font': [] }],
+            [{ 'size': ['small', false, 'large', 'huge'] }],
+            
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            
+            [{ 'script': 'sub'}, { 'script': 'super' }],
+            
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'list': 'check' }],
+            [{ 'indent': '-1'}, { 'indent': '+1' }],
+            
+            [{ 'direction': 'rtl' }],
+            [{ 'align': [] }],
+            
+            ['blockquote', 'code-block'],
+            
+            ['link', 'image', 'video', 'formula'],
+            
+            ['clean']
+        ];
+
+        // Mobile toolbar - simplified
+        const mobileToolbarOptions = [
             [{ 'header': [1, 2, 3, false] }],
             ['bold', 'italic', 'underline'],
             [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            ['link', 'blockquote'],
+            ['link', 'image'],
             ['clean']
         ];
 
@@ -64,28 +87,40 @@ class GorillaDocsApp {
                 throw new Error('Editor element not found');
             }
 
+            // Use appropriate toolbar based on device
+            const toolbar = this.isMobile ? mobileToolbarOptions : toolbarOptions;
+
             this.quill = new Quill('#editor', {
                 theme: 'snow',
                 modules: {
                     toolbar: {
-                        container: toolbarOptions
+                        container: toolbar,
+                        handlers: {
+                            'image': this.imageHandler
+                        }
+                    },
+                    clipboard: {
+                        matchVisual: false
                     }
                 },
                 placeholder: 'Start writing your document...',
-                bounds: '#editor'
+                bounds: '.editor-wrapper'
             });
 
-            // Handle toolbar positioning based on device
+            // Position toolbar properly
             this.positionToolbar();
 
             // Listen for text changes with debouncing
             this.quill.on('text-change', this.debounce(this.updateAnalytics, 300));
             
-            // Handle selection changes for better UX
+            // Handle editor focus
             this.quill.on('selection-change', (range) => {
-                if (range && this.isMobile && this.mobileToolbarVisible) {
-                    // Auto-hide mobile toolbar when user starts typing
-                    this.hideMobileToolbar();
+                if (range) {
+                    // Ensure toolbar stays visible when editing
+                    const toolbar = document.querySelector('.ql-toolbar');
+                    if (toolbar) {
+                        toolbar.style.visibility = 'visible';
+                    }
                 }
             });
 
@@ -99,21 +134,36 @@ class GorillaDocsApp {
         const toolbar = document.querySelector('.ql-toolbar');
         if (!toolbar) return;
 
-        // Prevent duplicate toolbar issues
-        const currentParent = toolbar.parentNode;
-        
-        if (this.isMobile) {
-            // Move to mobile container
-            const mobileContainer = document.getElementById('mobileToolbarContainer');
-            if (mobileContainer && currentParent !== mobileContainer) {
-                mobileContainer.appendChild(toolbar);
-            }
-        } else {
-            // Move to desktop container above editor
-            const desktopContainer = document.getElementById('desktopToolbar');
-            if (desktopContainer && currentParent !== desktopContainer) {
-                desktopContainer.appendChild(toolbar);
-            }
+        const toolbarContainer = document.getElementById('toolbar');
+        if (toolbarContainer && toolbar.parentNode !== toolbarContainer) {
+            toolbarContainer.appendChild(toolbar);
+        }
+    }
+
+    imageHandler() {
+        const input = document.getElementById('imageInput');
+        if (input) {
+            input.click();
+            
+            input.onchange = () => {
+                const file = input.files[0];
+                if (file) {
+                    // Check file size (limit to 5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                        this.showNotification('Image size should be less than 5MB', 'warning');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const range = this.quill.getSelection();
+                        this.quill.insertEmbed(range.index, 'image', e.target.result);
+                        this.quill.setSelection(range.index + 1);
+                    };
+                    reader.readAsDataURL(file);
+                }
+                input.value = '';
+            };
         }
     }
 
@@ -166,14 +216,9 @@ class GorillaDocsApp {
         this.addEventListenerSafely('toggleEditor', 'click', () => this.toggleEditor());
         this.addEventListenerSafely('shareBtn', 'click', () => this.shareDocument());
         this.addEventListenerSafely('downloadBtn', 'click', () => this.downloadPDF());
-        
-        // Mobile toolbar controls
-        this.addEventListenerSafely('mobileToolbarToggle', 'click', () => this.toggleMobileToolbar());
-        this.addEventListenerSafely('closeMobileToolbar', 'click', () => this.hideMobileToolbar());
 
         // Global event listeners
         window.addEventListener('resize', this.handleResize);
-        document.addEventListener('click', this.handleClickOutside);
         
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -183,20 +228,29 @@ class GorillaDocsApp {
                         e.preventDefault();
                         this.downloadPDF();
                         break;
-                    case 'h':
-                        if (this.isMobile) {
-                            e.preventDefault();
-                            this.toggleMobileToolbar();
-                        }
+                    case 'b':
+                        e.preventDefault();
+                        this.quill.format('bold', !this.quill.getFormat().bold);
+                        break;
+                    case 'i':
+                        e.preventDefault();
+                        this.quill.format('italic', !this.quill.getFormat().italic);
+                        break;
+                    case 'u':
+                        e.preventDefault();
+                        this.quill.format('underline', !this.quill.getFormat().underline);
                         break;
                 }
             }
-            
-            // Escape key to close mobile toolbar
-            if (e.key === 'Escape' && this.mobileToolbarVisible) {
-                this.hideMobileToolbar();
-            }
         });
+
+        // Prevent toolbar from hiding when clicking header
+        const header = document.querySelector('.header');
+        if (header) {
+            header.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        }
     }
 
     addEventListenerSafely(elementId, event, handler) {
@@ -210,22 +264,13 @@ class GorillaDocsApp {
         const wasMobile = this.isMobile;
         this.checkDeviceType();
         
-        // If device type changed, reposition toolbar
+        // If device type changed, reinitialize toolbar
         if (wasMobile !== this.isMobile) {
-            this.positionToolbar();
-            
-            // Hide mobile toolbar if switching to desktop
-            if (!this.isMobile && this.mobileToolbarVisible) {
-                this.hideMobileToolbar();
-            }
-        }
-    }
-
-    handleClickOutside(e) {
-        if (this.mobileToolbarVisible && 
-            !e.target.closest('#mobileToolbar') && 
-            !e.target.closest('#mobileToolbarToggle')) {
-            this.hideMobileToolbar();
+            // Destroy and recreate Quill with appropriate toolbar
+            const content = this.quill.root.innerHTML;
+            this.quill = null;
+            document.getElementById('editor').innerHTML = content;
+            this.setupQuillEditor();
         }
     }
 
@@ -331,6 +376,19 @@ class GorillaDocsApp {
                         }
                         ul, ol { margin: 1rem 0; padding-left: 2rem; }
                         li { margin-bottom: 0.5rem; }
+                        img { max-width: 100%; height: auto; }
+                        pre { 
+                            background: #f4f5f7;
+                            padding: 1rem;
+                            border-radius: 4px;
+                            overflow-x: auto;
+                        }
+                        code {
+                            background: #f4f5f7;
+                            padding: 0.2rem 0.4rem;
+                            border-radius: 3px;
+                            font-family: monospace;
+                        }
                         @media print {
                             body { margin: 0; padding: 1rem; }
                             @page { margin: 1cm; }
@@ -356,42 +414,6 @@ class GorillaDocsApp {
             console.error('PDF download failed:', error);
             this.showNotification('Failed to generate PDF', 'error');
         }
-    }
-
-    toggleMobileToolbar() {
-        if (this.mobileToolbarVisible) {
-            this.hideMobileToolbar();
-        } else {
-            this.showMobileToolbar();
-        }
-    }
-
-    showMobileToolbar() {
-        const mobileToolbar = document.getElementById('mobileToolbar');
-        const toggleBtn = document.getElementById('mobileToolbarToggle');
-        
-        if (!mobileToolbar || !toggleBtn) return;
-        
-        mobileToolbar.classList.add('active');
-        toggleBtn.innerHTML = '<span>✕</span>';
-        this.mobileToolbarVisible = true;
-        
-        // Prevent body scroll when toolbar is open
-        document.body.style.overflow = 'hidden';
-    }
-
-    hideMobileToolbar() {
-        const mobileToolbar = document.getElementById('mobileToolbar');
-        const toggleBtn = document.getElementById('mobileToolbarToggle');
-        
-        if (!mobileToolbar || !toggleBtn) return;
-        
-        mobileToolbar.classList.remove('active');
-        toggleBtn.innerHTML = '<span>🛠️</span>';
-        this.mobileToolbarVisible = false;
-        
-        // Restore body scroll
-        document.body.style.overflow = '';
     }
 
     updateCurrentYear() {
@@ -608,7 +630,6 @@ class GorillaDocsApp {
     // Cleanup method for when the app is destroyed
     destroy() {
         window.removeEventListener('resize', this.handleResize);
-        document.removeEventListener('click', this.handleClickOutside);
         
         if (this.quill) {
             this.quill = null;
