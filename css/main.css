@@ -635,6 +635,7 @@ body {
     width: 100%;
     position: static;
     order: 2;
+    border: 1px solid #e8e8e8;
   }
   
   .stats-grid {
@@ -723,10 +724,12 @@ body {
   
   .main-content {
     padding: var(--space-md) var(--space-sm);
+    padding-bottom: 100px; /* Space for mobile toolbar */
   }
   
   .analytics-sidebar {
     padding: var(--space-md);
+    border: 1px solid #e8e8e8;
   }
   
   .stats-grid {
