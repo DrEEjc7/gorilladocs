@@ -58,7 +58,7 @@ class GorillaDocsApp {
             
             [{ 'script': 'sub'}, { 'script': 'super' }],
             
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'list': 'check' }],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
             [{ 'indent': '-1'}, { 'indent': '+1' }],
             
             [{ 'direction': 'rtl' }],
@@ -66,7 +66,7 @@ class GorillaDocsApp {
             
             ['blockquote', 'code-block'],
             
-            ['link', 'image', 'video', 'formula'],
+            ['link', 'image', 'video'],
             
             ['clean']
         ];
@@ -98,13 +98,10 @@ class GorillaDocsApp {
                         handlers: {
                             'image': this.imageHandler
                         }
-                    },
-                    clipboard: {
-                        matchVisual: false
                     }
                 },
                 placeholder: 'Start writing your document...',
-                bounds: '.editor-wrapper'
+                bounds: document.body // Changed to document.body for better dropdown positioning
             });
 
             // Position toolbar properly
