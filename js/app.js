@@ -62,20 +62,26 @@ class GorillaDocsApp {
         ];
 
         try {
-            // Initialize Quill - simple and clean
-            this.quill = new Quill('#editor', {
-                theme: 'snow',
-                modules: {
-                    toolbar: {
-                        container: toolbarOptions,
-                        handlers: {
-                            'image': this.imageHandler
-                        }
-                    }
-                },
-                placeholder: 'Start writing your document...'
-            });
+    // NEW: Register the resize module with Quill
+    Quill.register('modules/resize', QuillResize);
 
+    // Initialize Quill
+    this.quill = new Quill('#editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: {
+                container: toolbarOptions,
+                handlers: {
+                    'image': this.imageHandler
+                }
+            },
+            // ADD THIS
+            resize: {
+                // You can add options here if needed, but defaults are fine
+            }
+        },
+        placeholder: 'Start writing your document...'
+    });
             // Listen for text changes with debouncing
             this.quill.on('text-change', this.debounce(this.updateAnalytics, 300));
 
