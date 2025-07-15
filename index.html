@@ -15,7 +15,7 @@
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/main-simple.css">
 </head>
 <body data-theme="light">
     <div class="app-container">
@@ -54,16 +54,10 @@
         <main class="main-content">
             <div class="content-wrapper">
                 <div class="editor-container" id="editorContainer">
-                    <!-- Toolbar Container -->
-                    <div class="toolbar-container" id="toolbar">
-                        <!-- Quill toolbar will be auto-generated here -->
-                    </div>
-                    
-                    <div class="editor-wrapper">
-                        <div id="editor">
-                            <h1>Welcome to Gorilla Docs</h1>
-                            <p>Start writing your document here...</p>
-                        </div>
+                    <!-- Quill will create its own structure here -->
+                    <div id="editor">
+                        <h1>Welcome to Gorilla Docs</h1>
+                        <p>Start writing your document here...</p>
                     </div>
                 </div>
                 
@@ -121,6 +115,6 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
     
     <!-- Custom JavaScript -->
-    <script src="js/app.js"></script>
+    <script src="js/app-simple.js"></script>
 </body>
 </html>
