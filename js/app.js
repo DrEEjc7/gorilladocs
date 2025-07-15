@@ -43,6 +43,11 @@ class GorillaDocsApp {
     }
 
     async setupQuillEditor() {
+        // Check if Quill is available
+        if (typeof Quill === 'undefined') {
+            throw new Error('Quill.js library not loaded');
+        }
+
         // Simplified toolbar for better mobile experience
         const toolbarOptions = [
             [{ 'header': [1, 2, 3, false] }],
@@ -54,6 +59,11 @@ class GorillaDocsApp {
 
         // Initialize Quill with proper error handling
         try {
+            const editorElement = document.getElementById('editor');
+            if (!editorElement) {
+                throw new Error('Editor element not found');
+            }
+
             this.quill = new Quill('#editor', {
                 theme: 'snow',
                 modules: {
@@ -89,16 +99,19 @@ class GorillaDocsApp {
         const toolbar = document.querySelector('.ql-toolbar');
         if (!toolbar) return;
 
+        // Prevent duplicate toolbar issues
+        const currentParent = toolbar.parentNode;
+        
         if (this.isMobile) {
             // Move to mobile container
             const mobileContainer = document.getElementById('mobileToolbarContainer');
-            if (mobileContainer && !mobileContainer.contains(toolbar)) {
+            if (mobileContainer && currentParent !== mobileContainer) {
                 mobileContainer.appendChild(toolbar);
             }
         } else {
             // Move to desktop container above editor
             const desktopContainer = document.getElementById('desktopToolbar');
-            if (desktopContainer && !desktopContainer.contains(toolbar)) {
+            if (desktopContainer && currentParent !== desktopContainer) {
                 desktopContainer.appendChild(toolbar);
             }
         }
@@ -247,10 +260,22 @@ class GorillaDocsApp {
                     text,
                     url: window.location.href
                 });
+                this.showNotification('Document shared successfully!', 'success');
             } else {
                 // Fallback: copy link to clipboard
-                await navigator.clipboard.writeText(window.location.href);
-                this.showNotification('Link copied to clipboard!', 'success');
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(window.location.href);
+                    this.showNotification('Link copied to clipboard!', 'success');
+                } else {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = window.location.href;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    this.showNotification('Link copied to clipboard!', 'success');
+                }
             }
         } catch (error) {
             if (error.name !== 'AbortError') {
@@ -422,8 +447,8 @@ class GorillaDocsApp {
         // Character count excluding whitespace
         const characters = cleanText.replace(/\s/g, '').length;
         
-        // Paragraph counting
-        const paragraphs = cleanText ? (cleanText.split(/\n\s*\n/).filter(p => p.trim().length > 0).length) : 0;
+        // Better paragraph counting using Quill's line breaks
+        const paragraphs = cleanText ? Math.max(1, (cleanText.split(/\n\s*\n/).filter(p => p.trim().length > 0).length)) : 0;
         
         // Reading time calculation (200 words per minute average)
         const readingTimeMinutes = Math.ceil(words / 200);
