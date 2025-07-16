@@ -24,9 +24,18 @@
                 </div>
 
                 <div class="header-center">
+                    <div class="document-title">
+                        <input type="text" placeholder="Untitled Document" id="documentTitle" class="title-input">
                     </div>
+                </div>
 
                 <div class="header-right">
+                    <button class="action-btn" id="exportBtn" aria-label="Export document" title="Export JSON">
+                        <span>📥</span>
+                    </button>
+                    <button class="action-btn" id="importBtn" aria-label="Import document" title="Import JSON">
+                        <span>📤</span>
+                    </button>
                     <button class="action-btn" id="themeToggle" aria-label="Toggle theme">
                         <span class="theme-icon">🌙</span>
                     </button>
@@ -34,7 +43,7 @@
                         <span>📝</span>
                     </button>
                     <button class="action-btn" id="shareBtn" aria-label="Share">
-                        <span>📤</span>
+                        <span>🔗</span>
                     </button>
                     <button class="action-btn" id="downloadBtn" aria-label="Download PDF">
                         <span>📄</span>
@@ -51,33 +60,111 @@
 
                 <aside class="analytics-sidebar" id="analyticsSidebar">
                     <div class="analytics-header">
-                        <h3>Document Stats</h3>
+                        <h3>Document Analytics</h3>
                     </div>
 
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <span class="stat-label">Words</span>
-                            <span class="stat-value" id="wordCount">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Characters</span>
-                            <span class="stat-value" id="charCount">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Reading Time</span>
-                            <span class="stat-value" id="readingTime">0 min</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Blocks</span>
-                            <span class="stat-value" id="blockCount">0</span>
+                    <!-- Basic Stats -->
+                    <div class="stats-section">
+                        <h4>Basic Stats</h4>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">Words</span>
+                                <span class="stat-value" id="wordCount">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Characters</span>
+                                <span class="stat-value" id="charCount">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Reading Time</span>
+                                <span class="stat-value" id="readingTime">0 min</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Blocks</span>
+                                <span class="stat-value" id="blockCount">0</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="readability-section">
-                        <h4>Readability</h4>
-                        <div class="readability-score" id="readabilityScore">
-                            <span class="score-value">-</span>
-                            <span class="score-label">Score</span>
+                    <!-- Structure Analysis -->
+                    <div class="stats-section">
+                        <h4>Structure</h4>
+                        <div class="stats-list">
+                            <div class="stat-row">
+                                <span class="stat-label">Sentences</span>
+                                <span class="stat-value" id="sentenceCount">0</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Paragraphs</span>
+                                <span class="stat-value" id="paragraphCount">0</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Headings</span>
+                                <span class="stat-value" id="headingCount">0</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Avg Words/Sentence</span>
+                                <span class="stat-value" id="avgWordsPerSentence">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quality Metrics -->
+                    <div class="stats-section">
+                        <h4>Quality Metrics</h4>
+                        <div class="metric-cards">
+                            <div class="metric-card">
+                                <div class="metric-header">
+                                    <span class="metric-label">Readability</span>
+                                    <span class="metric-value" id="readabilityScore">
+                                        <span class="score-value">-</span>
+                                    </span>
+                                </div>
+                                <div class="metric-description" id="readabilityDescription">No text to analyze</div>
+                            </div>
+                            
+                            <div class="metric-card">
+                                <div class="metric-header">
+                                    <span class="metric-label">Grade Level</span>
+                                    <span class="metric-value" id="gradeLevel">-</span>
+                                </div>
+                                <div class="metric-description">Flesch-Kincaid Grade</div>
+                            </div>
+                            
+                            <div class="metric-card">
+                                <div class="metric-header">
+                                    <span class="metric-label">SEO Score</span>
+                                    <span class="metric-value" id="seoScore">0</span>
+                                </div>
+                                <div class="metric-description">Content optimization</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Document Insights -->
+                    <div class="stats-section">
+                        <h4>Document Insights</h4>
+                        <div class="insights-list" id="documentInsights">
+                            <div class="insight-item">
+                                <span class="insight-icon">💡</span>
+                                <span class="insight-text">Start typing to see insights</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="stats-section">
+                        <h4>Quick Actions</h4>
+                        <div class="action-buttons">
+                            <button class="quick-action-btn" onclick="window.gorillaDocsApp?.autosave()">
+                                <span>💾</span> Save Now
+                            </button>
+                            <button class="quick-action-btn" onclick="window.gorillaDocsApp?.downloadPDF()">
+                                <span>📄</span> Export PDF
+                            </button>
+                            <button class="quick-action-btn" onclick="window.gorillaDocsApp?.shareDocument()">
+                                <span>🔗</span> Share
+                            </button>
                         </div>
                     </div>
                 </aside>
