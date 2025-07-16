@@ -1,13 +1,13 @@
-// Gorilla Docs - Premium Rich Text Editor Application
+// Gorilla Docs - Premium Rich Text Editor with Editor.js
 class GorillaDocsApp {
     constructor() {
-        this.quill = null;
+        this.editor = null;
         this.currentTheme = 'light';
         this.editorHidden = false;
         
         // Bind methods to maintain context
         this.updateAnalytics = this.updateAnalytics.bind(this);
-        this.imageHandler = this.imageHandler.bind(this);
+        this.imageUploadHandler = this.imageUploadHandler.bind(this);
         
         this.init();
     }
@@ -17,7 +17,7 @@ class GorillaDocsApp {
             this.showLoading();
             
             // Initialize components
-            await this.setupQuillEditor();
+            await this.setupEditorJS();
             this.setupThemeToggle();
             this.setupEventListeners();
             this.updateCurrentYear();
@@ -31,98 +31,170 @@ class GorillaDocsApp {
         }
     }
 
-    async setupQuillEditor() {
-        // Check if Quill is available
-        if (typeof Quill === 'undefined') {
-            throw new Error('Quill.js library not loaded');
-        }
-
-        // Extended toolbar options - using Quill's format
-        const toolbarOptions = [
-            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-            [{ 'font': [] }],
-            [{ 'size': ['small', false, 'large', 'huge'] }],
-            
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ 'color': [] }, { 'background': [] }],
-            
-            [{ 'script': 'sub'}, { 'script': 'super' }],
-            
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            [{ 'indent': '-1'}, { 'indent': '+1' }],
-            
-            [{ 'direction': 'rtl' }],
-            [{ 'align': [] }],
-            
-            ['blockquote', 'code-block'],
-            
-            ['link', 'image', 'video'],
-
-            [{ 'table': [] }], // Table button
-            
-            ['clean']
-        ];
-
+    async setupEditorJS() {
         try {
-            // Register all the new modules
-            Quill.register('modules/resize', QuillResize);
-            Quill.register({ 'modules/tableUI': QuillTableUI }, true);
-            registerQuillLanguageTool(Quill);
-
-
-            // Initialize Quill with all modules
-            this.quill = new Quill('#editor', {
-                theme: 'snow',
-                modules: {
-                    toolbar: {
-                        container: toolbarOptions,
-                        handlers: {
-                            'image': this.imageHandler
+            this.editor = new EditorJS({
+                holder: 'editor',
+                placeholder: 'Start writing your document...',
+                autofocus: true,
+                tools: {
+                    header: {
+                        class: Header,
+                        config: {
+                            placeholder: 'Enter a header',
+                            levels: [1, 2, 3, 4, 5, 6],
+                            defaultLevel: 2
                         }
                     },
-                    resize: {}, // Image and video resize
-                    syntax: true, // Syntax highlighting
-                    table: true, // Table support
-                    tableUI: true, // Table UI
-                    languageTool: {} // Spell checking
+                    paragraph: {
+                        class: Paragraph,
+                        inlineToolbar: true,
+                        config: {
+                            placeholder: 'Start typing...'
+                        }
+                    },
+                    list: {
+                        class: List,
+                        inlineToolbar: true,
+                        config: {
+                            defaultStyle: 'unordered'
+                        }
+                    },
+                    checklist: {
+                        class: Checklist,
+                        inlineToolbar: true,
+                    },
+                    image: {
+                        class: ImageTool,
+                        config: {
+                            uploader: {
+                                uploadByFile: this.imageUploadHandler,
+                            }
+                        }
+                    },
+                    quote: {
+                        class: Quote,
+                        inlineToolbar: true,
+                        config: {
+                            quotePlaceholder: 'Enter a quote',
+                            captionPlaceholder: 'Quote\'s author',
+                        },
+                    },
+                    code: {
+                        class: CodeTool,
+                        config: {
+                            placeholder: 'Enter code...'
+                        }
+                    },
+                    delimiter: Delimiter,
+                    raw: RawTool,
+                    embed: {
+                        class: Embed,
+                        config: {
+                            services: {
+                                youtube: true,
+                                coub: true,
+                                codepen: true,
+                                twitter: true,
+                                instagram: true,
+                                vimeo: true,
+                                gfycat: true,
+                                imgur: true,
+                                vine: true,
+                                aparat: true,
+                                facebook: true,
+                                pinterest: true,
+                            }
+                        }
+                    },
+                    table: {
+                        class: Table,
+                        inlineToolbar: true,
+                        config: {
+                            rows: 2,
+                            cols: 3,
+                        },
+                    },
+                    linkTool: {
+                        class: LinkTool,
+                        config: {
+                            endpoint: 'http://localhost:8008/fetchUrl', // You'll need to implement this
+                        }
+                    },
+                    warning: {
+                        class: Warning,
+                        inlineToolbar: true,
+                        config: {
+                            titlePlaceholder: 'Title',
+                            messagePlaceholder: 'Message',
+                        },
+                    },
+                    marker: {
+                        class: Marker,
+                    },
+                    inlineCode: {
+                        class: InlineCode,
+                    },
                 },
-                placeholder: 'Start writing your document...'
+                data: {
+                    blocks: [
+                        {
+                            type: 'header',
+                            data: {
+                                text: 'Welcome to Your Upgraded Gorilla Docs!',
+                                level: 1
+                            }
+                        },
+                        {
+                            type: 'paragraph',
+                            data: {
+                                text: 'You can now create rich, block-based content with tables, embedded media, and much more!'
+                            }
+                        },
+                        {
+                            type: 'code',
+                            data: {
+                                code: 'function helloWorld() {\n    console.log("Hello, from Gorilla Docs!");\n}'
+                            }
+                        }
+                    ]
+                },
+                onChange: this.debounce(this.updateAnalytics, 300)
             });
 
-            // Listen for text changes with debouncing
-            this.quill.on('text-change', this.debounce(this.updateAnalytics, 300));
-
+            await this.editor.isReady;
+            console.log('Editor.js is ready to work!');
+            
         } catch (error) {
-            console.error('Failed to initialize Quill editor:', error);
+            console.error('Failed to initialize Editor.js:', error);
             throw new Error('Editor initialization failed');
         }
     }
 
-    imageHandler() {
-        const input = document.getElementById('imageInput');
-        if (input) {
-            input.click();
-            
-            input.onchange = () => {
-                const file = input.files[0];
-                if (file) {
-                    // Check file size (limit to 5MB)
-                    if (file.size > 5 * 1024 * 1024) {
-                        this.showNotification('Image size should be less than 5MB', 'warning');
-                        return;
+    async imageUploadHandler(file) {
+        return new Promise((resolve, reject) => {
+            // Check file size (limit to 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                reject(new Error('Image size should be less than 5MB'));
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                resolve({
+                    success: 1,
+                    file: {
+                        url: e.target.result,
+                        name: file.name,
+                        size: file.size
                     }
-                    
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const range = this.quill.getSelection();
-                        this.quill.insertEmbed(range.index, 'image', e.target.result);
-                        this.quill.setSelection(range.index + 1);
-                    };
-                    reader.readAsDataURL(file);
-                }
-                input.value = '';
+                });
             };
-        }
+            reader.onerror = () => {
+                reject(new Error('Failed to read file'));
+            };
+            reader.readAsDataURL(file);
+        });
     }
 
     setupThemeToggle() {
@@ -205,25 +277,21 @@ class GorillaDocsApp {
         editorContainer.classList.toggle('hidden', this.editorHidden);
         toggleBtn.innerHTML = `<span>${this.editorHidden ? '👁️' : '📝'}</span>`;
         toggleBtn.setAttribute('aria-label', this.editorHidden ? 'Show editor' : 'Hide editor');
-        
-        // Focus editor when showing
-        if (!this.editorHidden && this.quill) {
-            setTimeout(() => this.quill.focus(), 100);
-        }
     }
 
     async shareDocument() {
-        if (!this.quill) return;
-        
-        const content = this.quill.getText();
-        const title = 'Gorilla Docs - Document';
-        const text = content.substring(0, 280) + (content.length > 280 ? '...' : '');
+        if (!this.editor) return;
         
         try {
+            const outputData = await this.editor.save();
+            const text = this.extractTextFromBlocks(outputData.blocks);
+            const title = 'Gorilla Docs - Document';
+            const shareText = text.substring(0, 280) + (text.length > 280 ? '...' : '');
+            
             if (navigator.share) {
                 await navigator.share({
                     title,
-                    text,
+                    text: shareText,
                     url: window.location.href
                 });
                 this.showNotification('Document shared successfully!', 'success');
@@ -251,11 +319,13 @@ class GorillaDocsApp {
         }
     }
 
-    downloadPDF() {
-        if (!this.quill) return;
+    async downloadPDF() {
+        if (!this.editor) return;
         
         try {
-            const content = this.quill.root.innerHTML;
+            const outputData = await this.editor.save();
+            const htmlContent = this.convertBlocksToHTML(outputData.blocks);
+            
             const printWindow = window.open('', '_blank');
             
             if (!printWindow) {
@@ -263,7 +333,7 @@ class GorillaDocsApp {
                 return;
             }
             
-            const htmlContent = `
+            const fullHtmlContent = `
                 <!DOCTYPE html>
                 <html>
                 <head>
@@ -310,6 +380,38 @@ class GorillaDocsApp {
                             border-radius: 3px;
                             font-family: monospace;
                         }
+                        table {
+                            border-collapse: collapse;
+                            width: 100%;
+                            margin: 1rem 0;
+                        }
+                        th, td {
+                            border: 1px solid #ddd;
+                            padding: 0.5rem;
+                            text-align: left;
+                        }
+                        th {
+                            background-color: #f4f5f7;
+                            font-weight: 600;
+                        }
+                        .delimiter {
+                            margin: 2rem 0;
+                            text-align: center;
+                            font-size: 1.5rem;
+                            color: #5e6c84;
+                        }
+                        .warning {
+                            background-color: #fffbf0;
+                            border: 1px solid #ffab00;
+                            border-radius: 4px;
+                            padding: 1rem;
+                            margin: 1rem 0;
+                        }
+                        .warning-title {
+                            font-weight: 600;
+                            color: #ffab00;
+                            margin-bottom: 0.5rem;
+                        }
                         @media print {
                             body { margin: 0; padding: 1rem; }
                             @page { margin: 1cm; }
@@ -317,12 +419,12 @@ class GorillaDocsApp {
                     </style>
                 </head>
                 <body>
-                    ${content}
+                    ${htmlContent}
                 </body>
                 </html>
             `;
             
-            printWindow.document.write(htmlContent);
+            printWindow.document.write(fullHtmlContent);
             printWindow.document.close();
             printWindow.focus();
             
@@ -337,6 +439,72 @@ class GorillaDocsApp {
         }
     }
 
+    convertBlocksToHTML(blocks) {
+        return blocks.map(block => {
+            switch (block.type) {
+                case 'header':
+                    return `<h${block.data.level}>${block.data.text}</h${block.data.level}>`;
+                case 'paragraph':
+                    return `<p>${block.data.text}</p>`;
+                case 'list':
+                    const listType = block.data.style === 'ordered' ? 'ol' : 'ul';
+                    const listItems = block.data.items.map(item => `<li>${item}</li>`).join('');
+                    return `<${listType}>${listItems}</${listType}>`;
+                case 'checklist':
+                    const checkItems = block.data.items.map(item => 
+                        `<li><input type="checkbox" ${item.checked ? 'checked' : ''} disabled> ${item.text}</li>`
+                    ).join('');
+                    return `<ul style="list-style: none;">${checkItems}</ul>`;
+                case 'quote':
+                    return `<blockquote>${block.data.text}${block.data.caption ? `<cite> — ${block.data.caption}</cite>` : ''}</blockquote>`;
+                case 'code':
+                    return `<pre><code>${block.data.code}</code></pre>`;
+                case 'delimiter':
+                    return `<div class="delimiter">* * *</div>`;
+                case 'image':
+                    return `<img src="${block.data.file.url}" alt="${block.data.caption || ''}" />`;
+                case 'table':
+                    const tableRows = block.data.content.map((row, index) => {
+                        const cells = row.map(cell => 
+                            index === 0 ? `<th>${cell}</th>` : `<td>${cell}</td>`
+                        ).join('');
+                        return `<tr>${cells}</tr>`;
+                    }).join('');
+                    return `<table>${tableRows}</table>`;
+                case 'warning':
+                    return `<div class="warning"><div class="warning-title">${block.data.title}</div><div>${block.data.message}</div></div>`;
+                case 'raw':
+                    return block.data.html;
+                default:
+                    return '';
+            }
+        }).join('');
+    }
+
+    extractTextFromBlocks(blocks) {
+        return blocks.map(block => {
+            switch (block.type) {
+                case 'header':
+                case 'paragraph':
+                    return block.data.text;
+                case 'list':
+                    return block.data.items.join(' ');
+                case 'checklist':
+                    return block.data.items.map(item => item.text).join(' ');
+                case 'quote':
+                    return block.data.text;
+                case 'code':
+                    return block.data.code;
+                case 'table':
+                    return block.data.content.flat().join(' ');
+                case 'warning':
+                    return `${block.data.title} ${block.data.message}`;
+                default:
+                    return '';
+            }
+        }).join(' ');
+    }
+
     updateCurrentYear() {
         const yearElement = document.getElementById('currentYear');
         if (yearElement) {
@@ -348,17 +516,18 @@ class GorillaDocsApp {
         this.updateAnalytics();
     }
 
-    updateAnalytics() {
-        if (!this.quill) return;
+    async updateAnalytics() {
+        if (!this.editor) return;
         
         try {
-            const text = this.quill.getText();
+            const outputData = await this.editor.save();
+            const text = this.extractTextFromBlocks(outputData.blocks);
             const stats = this.calculateTextStats(text);
             
             this.updateElement('wordCount', stats.words);
             this.updateElement('charCount', stats.characters);
             this.updateElement('readingTime', stats.readingTime);
-            this.updateElement('paragraphCount', stats.paragraphs);
+            this.updateElement('blockCount', outputData.blocks.length);
             
             const readability = this.calculateReadabilityScore(text);
             const scoreElement = document.getElementById('readabilityScore');
@@ -390,16 +559,13 @@ class GorillaDocsApp {
         // Character count excluding whitespace
         const characters = cleanText.replace(/\s/g, '').length;
         
-        // Better paragraph counting
-        const paragraphs = cleanText ? Math.max(1, (cleanText.split(/\n\s*\n/).filter(p => p.trim().length > 0).length)) : 0;
-        
         // Reading time calculation (200 words per minute average)
         const readingTimeMinutes = Math.ceil(words / 200);
         const readingTime = readingTimeMinutes === 0 ? '0 min' : 
                           readingTimeMinutes === 1 ? '1 min' : 
                           `${readingTimeMinutes} min`;
         
-        return { words, characters, readingTime, paragraphs };
+        return { words, characters, readingTime };
     }
 
     calculateReadabilityScore(text) {
