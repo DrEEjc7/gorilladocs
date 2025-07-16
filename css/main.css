@@ -229,70 +229,81 @@ body {
   overflow: hidden;
 }
 
-/* Let Quill handle its own editor styling */
+/* Editor.js Styles */
 #editor {
   min-height: 500px;
-}
-
-/* Minimal Quill customizations - only what's necessary */
-.ql-toolbar.ql-snow {
-  border: none;
-  border-bottom: 1px solid var(--border-primary);
-  background: var(--bg-elevated);
-  padding: var(--space-md);
-}
-
-.ql-container.ql-snow {
-  border: none;
-  font-family: inherit;
-}
-
-.ql-editor {
   padding: var(--space-2xl);
-  font-size: var(--font-size-base);
-  line-height: 1.75;
+}
+
+/* Editor.js Dark Mode Customization */
+[data-theme="dark"] .codex-editor {
   color: var(--text-primary);
 }
 
-/* Dark mode Quill adjustments */
-[data-theme="dark"] .ql-toolbar.ql-snow .ql-stroke {
-  stroke: var(--text-secondary);
+[data-theme="dark"] .codex-editor__redactor {
+  color: var(--text-primary);
 }
 
-[data-theme="dark"] .ql-toolbar.ql-snow .ql-fill,
-[data-theme="dark"] .ql-toolbar.ql-snow .ql-stroke.ql-fill {
-  fill: var(--text-secondary);
+[data-theme="dark"] .ce-block__content {
+  color: var(--text-primary);
 }
 
-[data-theme="dark"] .ql-toolbar.ql-snow button:hover .ql-stroke {
-  stroke: var(--text-primary);
+[data-theme="dark"] .ce-paragraph {
+  color: var(--text-primary);
 }
 
-[data-theme="dark"] .ql-toolbar.ql-snow button:hover .ql-fill,
-[data-theme="dark"] .ql-toolbar.ql-snow button:hover .ql-stroke.ql-fill {
-  fill: var(--text-primary);
+[data-theme="dark"] .ce-header {
+  color: var(--text-primary);
 }
 
-[data-theme="dark"] .ql-toolbar.ql-snow button.ql-active .ql-stroke,
-[data-theme="dark"] .ql-toolbar.ql-snow button.ql-active .ql-fill,
-[data-theme="dark"] .ql-toolbar.ql-snow button.ql-active .ql-stroke.ql-fill {
-  fill: var(--accent-primary);
-  stroke: var(--accent-primary);
-}
-
-[data-theme="dark"] .ql-toolbar.ql-snow .ql-picker-label,
-[data-theme="dark"] .ql-toolbar.ql-snow .ql-picker-item {
-  color: var(--text-secondary);
-}
-
-[data-theme="dark"] .ql-snow .ql-picker-options {
-  background-color: var(--bg-elevated);
+[data-theme="dark"] .ce-toolbar__content {
+  background: var(--bg-elevated);
   border-color: var(--border-primary);
 }
 
-[data-theme="dark"] .ql-snow .ql-picker-item:hover {
-  background-color: var(--bg-tertiary);
+[data-theme="dark"] .ce-toolbar__actions {
+  background: var(--bg-elevated);
+  border-color: var(--border-primary);
+}
+
+[data-theme="dark"] .ce-popover {
+  background: var(--bg-elevated);
+  border-color: var(--border-primary);
   color: var(--text-primary);
+}
+
+[data-theme="dark"] .ce-popover__item {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .ce-popover__item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .ce-toolbox {
+  background: var(--bg-elevated);
+  border-color: var(--border-primary);
+}
+
+[data-theme="dark"] .ce-toolbox__button {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .ce-toolbox__button:hover {
+  background-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .ce-inline-toolbar {
+  background: var(--bg-elevated);
+  border-color: var(--border-primary);
+}
+
+[data-theme="dark"] .ce-inline-tool {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .ce-inline-tool:hover {
+  background-color: var(--bg-tertiary);
 }
 
 /* Analytics Sidebar */
@@ -489,7 +500,7 @@ body {
     gap: var(--space-lg);
   }
   
-  .ql-editor {
+  #editor {
     padding: var(--space-lg);
   }
   
@@ -538,7 +549,7 @@ body {
     font-size: var(--font-size-lg);
   }
   
-  .ql-editor {
+  #editor {
     padding: var(--space-md);
   }
   
