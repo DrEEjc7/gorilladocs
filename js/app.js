@@ -16,6 +16,11 @@ class GorillaDocsApp {
         try {
             this.showLoading();
             
+            // Check if Editor.js is loaded
+            if (typeof EditorJS === 'undefined') {
+                throw new Error('Editor.js library not loaded. Please check your internet connection.');
+            }
+            
             // Initialize components
             await this.setupEditorJS();
             this.setupThemeToggle();
@@ -33,109 +38,185 @@ class GorillaDocsApp {
 
     async setupEditorJS() {
         try {
+            // Check if all required classes are available
+            const requiredClasses = {
+                'Header': typeof Header !== 'undefined',
+                'Paragraph': typeof Paragraph !== 'undefined',
+                'List': typeof List !== 'undefined',
+                'Checklist': typeof Checklist !== 'undefined',
+                'ImageTool': typeof ImageTool !== 'undefined',
+                'Quote': typeof Quote !== 'undefined',
+                'CodeTool': typeof CodeTool !== 'undefined',
+                'Delimiter': typeof Delimiter !== 'undefined',
+                'RawTool': typeof RawTool !== 'undefined',
+                'Embed': typeof Embed !== 'undefined',
+                'Table': typeof Table !== 'undefined',
+                'LinkTool': typeof LinkTool !== 'undefined',
+                'Warning': typeof Warning !== 'undefined',
+                'Marker': typeof Marker !== 'undefined',
+                'InlineCode': typeof InlineCode !== 'undefined'
+            };
+
+            const missingClasses = Object.entries(requiredClasses)
+                .filter(([name, available]) => !available)
+                .map(([name]) => name);
+
+            if (missingClasses.length > 0) {
+                console.warn('Missing Editor.js plugins:', missingClasses);
+                this.showNotification(`Some editor features may not work. Missing: ${missingClasses.join(', ')}`, 'warning');
+            }
+
+            // Build tools object with only available plugins
+            const tools = {};
+
+            if (typeof Header !== 'undefined') {
+                tools.header = {
+                    class: Header,
+                    config: {
+                        placeholder: 'Enter a header',
+                        levels: [1, 2, 3, 4, 5, 6],
+                        defaultLevel: 2
+                    }
+                };
+            }
+
+            if (typeof Paragraph !== 'undefined') {
+                tools.paragraph = {
+                    class: Paragraph,
+                    inlineToolbar: true,
+                    config: {
+                        placeholder: 'Start typing...'
+                    }
+                };
+            }
+
+            if (typeof List !== 'undefined') {
+                tools.list = {
+                    class: List,
+                    inlineToolbar: true,
+                    config: {
+                        defaultStyle: 'unordered'
+                    }
+                };
+            }
+
+            if (typeof Checklist !== 'undefined') {
+                tools.checklist = {
+                    class: Checklist,
+                    inlineToolbar: true,
+                };
+            }
+
+            if (typeof ImageTool !== 'undefined') {
+                tools.image = {
+                    class: ImageTool,
+                    config: {
+                        uploader: {
+                            uploadByFile: this.imageUploadHandler,
+                        }
+                    }
+                };
+            }
+
+            if (typeof Quote !== 'undefined') {
+                tools.quote = {
+                    class: Quote,
+                    inlineToolbar: true,
+                    config: {
+                        quotePlaceholder: 'Enter a quote',
+                        captionPlaceholder: 'Quote\'s author',
+                    },
+                };
+            }
+
+            if (typeof CodeTool !== 'undefined') {
+                tools.code = {
+                    class: CodeTool,
+                    config: {
+                        placeholder: 'Enter code...'
+                    }
+                };
+            }
+
+            if (typeof Delimiter !== 'undefined') {
+                tools.delimiter = Delimiter;
+            }
+
+            if (typeof RawTool !== 'undefined') {
+                tools.raw = RawTool;
+            }
+
+            if (typeof Embed !== 'undefined') {
+                tools.embed = {
+                    class: Embed,
+                    config: {
+                        services: {
+                            youtube: true,
+                            coub: true,
+                            codepen: true,
+                            twitter: true,
+                            instagram: true,
+                            vimeo: true,
+                            gfycat: true,
+                            imgur: true,
+                            vine: true,
+                            aparat: true,
+                            facebook: true,
+                            pinterest: true,
+                        }
+                    }
+                };
+            }
+
+            if (typeof Table !== 'undefined') {
+                tools.table = {
+                    class: Table,
+                    inlineToolbar: true,
+                    config: {
+                        rows: 2,
+                        cols: 3,
+                    },
+                };
+            }
+
+            // Only add linkTool if it's available and we have a working endpoint
+            if (typeof LinkTool !== 'undefined') {
+                tools.linkTool = {
+                    class: LinkTool,
+                    config: {
+                        endpoint: '/fetchUrl' // You'll need to implement this endpoint
+                    }
+                };
+            }
+
+            if (typeof Warning !== 'undefined') {
+                tools.warning = {
+                    class: Warning,
+                    inlineToolbar: true,
+                    config: {
+                        titlePlaceholder: 'Title',
+                        messagePlaceholder: 'Message',
+                    },
+                };
+            }
+
+            if (typeof Marker !== 'undefined') {
+                tools.marker = {
+                    class: Marker,
+                };
+            }
+
+            if (typeof InlineCode !== 'undefined') {
+                tools.inlineCode = {
+                    class: InlineCode,
+                };
+            }
+
             this.editor = new EditorJS({
                 holder: 'editor',
                 placeholder: 'Start writing your document...',
                 autofocus: true,
-                tools: {
-                    header: {
-                        class: Header,
-                        config: {
-                            placeholder: 'Enter a header',
-                            levels: [1, 2, 3, 4, 5, 6],
-                            defaultLevel: 2
-                        }
-                    },
-                    paragraph: {
-                        class: Paragraph,
-                        inlineToolbar: true,
-                        config: {
-                            placeholder: 'Start typing...'
-                        }
-                    },
-                    list: {
-                        class: List,
-                        inlineToolbar: true,
-                        config: {
-                            defaultStyle: 'unordered'
-                        }
-                    },
-                    checklist: {
-                        class: Checklist,
-                        inlineToolbar: true,
-                    },
-                    image: {
-                        class: ImageTool,
-                        config: {
-                            uploader: {
-                                uploadByFile: this.imageUploadHandler,
-                            }
-                        }
-                    },
-                    quote: {
-                        class: Quote,
-                        inlineToolbar: true,
-                        config: {
-                            quotePlaceholder: 'Enter a quote',
-                            captionPlaceholder: 'Quote\'s author',
-                        },
-                    },
-                    code: {
-                        class: CodeTool,
-                        config: {
-                            placeholder: 'Enter code...'
-                        }
-                    },
-                    delimiter: Delimiter,
-                    raw: RawTool,
-                    embed: {
-                        class: Embed,
-                        config: {
-                            services: {
-                                youtube: true,
-                                coub: true,
-                                codepen: true,
-                                twitter: true,
-                                instagram: true,
-                                vimeo: true,
-                                gfycat: true,
-                                imgur: true,
-                                vine: true,
-                                aparat: true,
-                                facebook: true,
-                                pinterest: true,
-                            }
-                        }
-                    },
-                    table: {
-                        class: Table,
-                        inlineToolbar: true,
-                        config: {
-                            rows: 2,
-                            cols: 3,
-                        },
-                    },
-                    linkTool: {
-                        class: LinkTool,
-                        config: {
-                            endpoint: 'http://localhost:8008/fetchUrl', // You'll need to implement this
-                        }
-                    },
-                    warning: {
-                        class: Warning,
-                        inlineToolbar: true,
-                        config: {
-                            titlePlaceholder: 'Title',
-                            messagePlaceholder: 'Message',
-                        },
-                    },
-                    marker: {
-                        class: Marker,
-                    },
-                    inlineCode: {
-                        class: InlineCode,
-                    },
-                },
+                tools: tools,
                 data: {
                     blocks: [
                         {
@@ -159,15 +240,17 @@ class GorillaDocsApp {
                         }
                     ]
                 },
-                onChange: this.debounce(this.updateAnalytics, 300)
+                onChange: this.debounce(this.updateAnalytics, 300),
+                onReady: () => {
+                    console.log('Editor.js is ready to work!');
+                }
             });
 
             await this.editor.isReady;
-            console.log('Editor.js is ready to work!');
             
         } catch (error) {
             console.error('Failed to initialize Editor.js:', error);
-            throw new Error('Editor initialization failed');
+            throw new Error('Editor initialization failed: ' + error.message);
         }
     }
 
@@ -176,6 +259,13 @@ class GorillaDocsApp {
             // Check file size (limit to 5MB)
             if (file.size > 5 * 1024 * 1024) {
                 reject(new Error('Image size should be less than 5MB'));
+                return;
+            }
+
+            // Check file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                reject(new Error('Only JPEG, PNG, GIF, and WebP images are allowed'));
                 return;
             }
 
@@ -441,66 +531,89 @@ class GorillaDocsApp {
 
     convertBlocksToHTML(blocks) {
         return blocks.map(block => {
-            switch (block.type) {
-                case 'header':
-                    return `<h${block.data.level}>${block.data.text}</h${block.data.level}>`;
-                case 'paragraph':
-                    return `<p>${block.data.text}</p>`;
-                case 'list':
-                    const listType = block.data.style === 'ordered' ? 'ol' : 'ul';
-                    const listItems = block.data.items.map(item => `<li>${item}</li>`).join('');
-                    return `<${listType}>${listItems}</${listType}>`;
-                case 'checklist':
-                    const checkItems = block.data.items.map(item => 
-                        `<li><input type="checkbox" ${item.checked ? 'checked' : ''} disabled> ${item.text}</li>`
-                    ).join('');
-                    return `<ul style="list-style: none;">${checkItems}</ul>`;
-                case 'quote':
-                    return `<blockquote>${block.data.text}${block.data.caption ? `<cite> — ${block.data.caption}</cite>` : ''}</blockquote>`;
-                case 'code':
-                    return `<pre><code>${block.data.code}</code></pre>`;
-                case 'delimiter':
-                    return `<div class="delimiter">* * *</div>`;
-                case 'image':
-                    return `<img src="${block.data.file.url}" alt="${block.data.caption || ''}" />`;
-                case 'table':
-                    const tableRows = block.data.content.map((row, index) => {
-                        const cells = row.map(cell => 
-                            index === 0 ? `<th>${cell}</th>` : `<td>${cell}</td>`
+            try {
+                switch (block.type) {
+                    case 'header':
+                        return `<h${block.data.level}>${this.escapeHtml(block.data.text)}</h${block.data.level}>`;
+                    case 'paragraph':
+                        return `<p>${this.escapeHtml(block.data.text)}</p>`;
+                    case 'list':
+                        const listType = block.data.style === 'ordered' ? 'ol' : 'ul';
+                        const listItems = block.data.items.map(item => `<li>${this.escapeHtml(item)}</li>`).join('');
+                        return `<${listType}>${listItems}</${listType}>`;
+                    case 'checklist':
+                        const checkItems = block.data.items.map(item => 
+                            `<li><input type="checkbox" ${item.checked ? 'checked' : ''} disabled> ${this.escapeHtml(item.text)}</li>`
                         ).join('');
-                        return `<tr>${cells}</tr>`;
-                    }).join('');
-                    return `<table>${tableRows}</table>`;
-                case 'warning':
-                    return `<div class="warning"><div class="warning-title">${block.data.title}</div><div>${block.data.message}</div></div>`;
-                case 'raw':
-                    return block.data.html;
-                default:
-                    return '';
+                        return `<ul style="list-style: none;">${checkItems}</ul>`;
+                    case 'quote':
+                        return `<blockquote>${this.escapeHtml(block.data.text)}${block.data.caption ? `<cite> — ${this.escapeHtml(block.data.caption)}</cite>` : ''}</blockquote>`;
+                    case 'code':
+                        return `<pre><code>${this.escapeHtml(block.data.code)}</code></pre>`;
+                    case 'delimiter':
+                        return `<div class="delimiter">* * *</div>`;
+                    case 'image':
+                        return `<img src="${block.data.file.url}" alt="${this.escapeHtml(block.data.caption || '')}" />`;
+                    case 'table':
+                        if (block.data.content && Array.isArray(block.data.content)) {
+                            const tableRows = block.data.content.map((row, index) => {
+                                const cells = row.map(cell => 
+                                    index === 0 ? `<th>${this.escapeHtml(cell)}</th>` : `<td>${this.escapeHtml(cell)}</td>`
+                                ).join('');
+                                return `<tr>${cells}</tr>`;
+                            }).join('');
+                            return `<table>${tableRows}</table>`;
+                        }
+                        return '';
+                    case 'warning':
+                        return `<div class="warning"><div class="warning-title">${this.escapeHtml(block.data.title)}</div><div>${this.escapeHtml(block.data.message)}</div></div>`;
+                    case 'raw':
+                        return block.data.html || '';
+                    default:
+                        return '';
+                }
+            } catch (error) {
+                console.error('Error converting block to HTML:', block, error);
+                return '';
             }
         }).join('');
     }
 
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
     extractTextFromBlocks(blocks) {
         return blocks.map(block => {
-            switch (block.type) {
-                case 'header':
-                case 'paragraph':
-                    return block.data.text;
-                case 'list':
-                    return block.data.items.join(' ');
-                case 'checklist':
-                    return block.data.items.map(item => item.text).join(' ');
-                case 'quote':
-                    return block.data.text;
-                case 'code':
-                    return block.data.code;
-                case 'table':
-                    return block.data.content.flat().join(' ');
-                case 'warning':
-                    return `${block.data.title} ${block.data.message}`;
-                default:
-                    return '';
+            try {
+                switch (block.type) {
+                    case 'header':
+                    case 'paragraph':
+                        return block.data.text || '';
+                    case 'list':
+                        return (block.data.items || []).join(' ');
+                    case 'checklist':
+                        return (block.data.items || []).map(item => item.text || '').join(' ');
+                    case 'quote':
+                        return block.data.text || '';
+                    case 'code':
+                        return block.data.code || '';
+                    case 'table':
+                        if (block.data.content && Array.isArray(block.data.content)) {
+                            return block.data.content.flat().join(' ');
+                        }
+                        return '';
+                    case 'warning':
+                        return `${block.data.title || ''} ${block.data.message || ''}`;
+                    default:
+                        return '';
+                }
+            } catch (error) {
+                console.error('Error extracting text from block:', block, error);
+                return '';
             }
         }).join(' ');
     }
@@ -728,10 +841,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 background: white; padding: 2rem; 
                 border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                 text-align: center; max-width: 400px;
+                z-index: 10000;
             ">
                 <h3 style="margin-bottom: 1rem; color: #172b4d;">Failed to Load Editor</h3>
                 <p style="margin-bottom: 1.5rem; color: #5e6c84;">
-                    There was an error loading Gorilla Docs. Please refresh the page to try again.
+                    There was an error loading Gorilla Docs. Please check your internet connection and refresh the page.
                 </p>
                 <button onclick="window.location.reload()" style="
                     background: #0052cc; color: white; border: none; 
