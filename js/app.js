@@ -1,13 +1,16 @@
-// Gorilla Docs - Premium Rich Text Editor with Editor.js
+// Gorilla Docs - Premium Rich Text Editor with Enhanced Analytics
 class GorillaDocsApp {
     constructor() {
         this.editor = null;
         this.currentTheme = 'light';
         this.editorHidden = false;
+        this.lastSavedData = null;
+        this.autosaveInterval = null;
         
         // Bind methods to maintain context
         this.updateAnalytics = this.updateAnalytics.bind(this);
         this.imageUploadHandler = this.imageUploadHandler.bind(this);
+        this.autosave = this.autosave.bind(this);
         
         this.init();
     }
@@ -27,6 +30,7 @@ class GorillaDocsApp {
             this.setupEventListeners();
             this.updateCurrentYear();
             this.initializeAnalytics();
+            this.setupAutosave();
             
             this.hideLoading();
         } catch (error) {
@@ -38,211 +42,22 @@ class GorillaDocsApp {
 
     async setupEditorJS() {
         try {
-            // Check if all required classes are available
-            const requiredClasses = {
-                'Header': typeof Header !== 'undefined',
-                'Paragraph': typeof Paragraph !== 'undefined',
-                'List': typeof List !== 'undefined',
-                'Checklist': typeof Checklist !== 'undefined',
-                'ImageTool': typeof ImageTool !== 'undefined',
-                'Quote': typeof Quote !== 'undefined',
-                'CodeTool': typeof CodeTool !== 'undefined',
-                'Delimiter': typeof Delimiter !== 'undefined',
-                'RawTool': typeof RawTool !== 'undefined',
-                'Embed': typeof Embed !== 'undefined',
-                'Table': typeof Table !== 'undefined',
-                'LinkTool': typeof LinkTool !== 'undefined',
-                'Warning': typeof Warning !== 'undefined',
-                'Marker': typeof Marker !== 'undefined',
-                'InlineCode': typeof InlineCode !== 'undefined'
-            };
+            // Build tools object with available plugins
+            const tools = this.buildToolsConfig();
 
-            const missingClasses = Object.entries(requiredClasses)
-                .filter(([name, available]) => !available)
-                .map(([name]) => name);
-
-            if (missingClasses.length > 0) {
-                console.warn('Missing Editor.js plugins:', missingClasses);
-                this.showNotification(`Some editor features may not work. Missing: ${missingClasses.join(', ')}`, 'warning');
-            }
-
-            // Build tools object with only available plugins
-            const tools = {};
-
-            if (typeof Header !== 'undefined') {
-                tools.header = {
-                    class: Header,
-                    config: {
-                        placeholder: 'Enter a header',
-                        levels: [1, 2, 3, 4, 5, 6],
-                        defaultLevel: 2
-                    }
-                };
-            }
-
-            if (typeof Paragraph !== 'undefined') {
-                tools.paragraph = {
-                    class: Paragraph,
-                    inlineToolbar: true,
-                    config: {
-                        placeholder: 'Start typing...'
-                    }
-                };
-            }
-
-            if (typeof List !== 'undefined') {
-                tools.list = {
-                    class: List,
-                    inlineToolbar: true,
-                    config: {
-                        defaultStyle: 'unordered'
-                    }
-                };
-            }
-
-            if (typeof Checklist !== 'undefined') {
-                tools.checklist = {
-                    class: Checklist,
-                    inlineToolbar: true,
-                };
-            }
-
-            if (typeof ImageTool !== 'undefined') {
-                tools.image = {
-                    class: ImageTool,
-                    config: {
-                        uploader: {
-                            uploadByFile: this.imageUploadHandler,
-                        }
-                    }
-                };
-            }
-
-            if (typeof Quote !== 'undefined') {
-                tools.quote = {
-                    class: Quote,
-                    inlineToolbar: true,
-                    config: {
-                        quotePlaceholder: 'Enter a quote',
-                        captionPlaceholder: 'Quote\'s author',
-                    },
-                };
-            }
-
-            if (typeof CodeTool !== 'undefined') {
-                tools.code = {
-                    class: CodeTool,
-                    config: {
-                        placeholder: 'Enter code...'
-                    }
-                };
-            }
-
-            if (typeof Delimiter !== 'undefined') {
-                tools.delimiter = Delimiter;
-            }
-
-            if (typeof RawTool !== 'undefined') {
-                tools.raw = RawTool;
-            }
-
-            if (typeof Embed !== 'undefined') {
-                tools.embed = {
-                    class: Embed,
-                    config: {
-                        services: {
-                            youtube: true,
-                            coub: true,
-                            codepen: true,
-                            twitter: true,
-                            instagram: true,
-                            vimeo: true,
-                            gfycat: true,
-                            imgur: true,
-                            vine: true,
-                            aparat: true,
-                            facebook: true,
-                            pinterest: true,
-                        }
-                    }
-                };
-            }
-
-            if (typeof Table !== 'undefined') {
-                tools.table = {
-                    class: Table,
-                    inlineToolbar: true,
-                    config: {
-                        rows: 2,
-                        cols: 3,
-                    },
-                };
-            }
-
-            // Only add linkTool if it's available and we have a working endpoint
-            if (typeof LinkTool !== 'undefined') {
-                tools.linkTool = {
-                    class: LinkTool,
-                    config: {
-                        endpoint: '/fetchUrl' // You'll need to implement this endpoint
-                    }
-                };
-            }
-
-            if (typeof Warning !== 'undefined') {
-                tools.warning = {
-                    class: Warning,
-                    inlineToolbar: true,
-                    config: {
-                        titlePlaceholder: 'Title',
-                        messagePlaceholder: 'Message',
-                    },
-                };
-            }
-
-            if (typeof Marker !== 'undefined') {
-                tools.marker = {
-                    class: Marker,
-                };
-            }
-
-            if (typeof InlineCode !== 'undefined') {
-                tools.inlineCode = {
-                    class: InlineCode,
-                };
-            }
+            // Load saved data or use default
+            const savedData = this.getSavedData();
 
             this.editor = new EditorJS({
                 holder: 'editor',
                 placeholder: 'Start writing your document...',
                 autofocus: true,
                 tools: tools,
-                data: {
-                    blocks: [
-                        {
-                            type: 'header',
-                            data: {
-                                text: 'Welcome to Your Upgraded Gorilla Docs!',
-                                level: 1
-                            }
-                        },
-                        {
-                            type: 'paragraph',
-                            data: {
-                                text: 'You can now create rich, block-based content with tables, embedded media, and much more!'
-                            }
-                        },
-                        {
-                            type: 'code',
-                            data: {
-                                code: 'function helloWorld() {\n    console.log("Hello, from Gorilla Docs!");\n}'
-                            }
-                        }
-                    ]
-                },
-                onChange: this.debounce(this.updateAnalytics, 300),
+                data: savedData,
+                onChange: this.debounce(this.updateAnalytics, 500),
                 onReady: () => {
                     console.log('Editor.js is ready to work!');
+                    this.updateAnalytics(); // Initial analytics update
                 }
             });
 
@@ -254,15 +69,234 @@ class GorillaDocsApp {
         }
     }
 
+    buildToolsConfig() {
+        const tools = {};
+
+        // Build tools dynamically based on what's available
+        if (typeof Header !== 'undefined') {
+            tools.header = {
+                class: Header,
+                config: {
+                    placeholder: 'Enter a header',
+                    levels: [1, 2, 3, 4, 5, 6],
+                    defaultLevel: 2
+                }
+            };
+        }
+
+        if (typeof Paragraph !== 'undefined') {
+            tools.paragraph = {
+                class: Paragraph,
+                inlineToolbar: true,
+                config: {
+                    placeholder: 'Start typing...'
+                }
+            };
+        }
+
+        if (typeof List !== 'undefined') {
+            tools.list = {
+                class: List,
+                inlineToolbar: true,
+                config: {
+                    defaultStyle: 'unordered'
+                }
+            };
+        }
+
+        if (typeof Checklist !== 'undefined') {
+            tools.checklist = {
+                class: Checklist,
+                inlineToolbar: true,
+            };
+        }
+
+        if (typeof ImageTool !== 'undefined') {
+            tools.image = {
+                class: ImageTool,
+                config: {
+                    uploader: {
+                        uploadByFile: this.imageUploadHandler,
+                    }
+                }
+            };
+        }
+
+        if (typeof Quote !== 'undefined') {
+            tools.quote = {
+                class: Quote,
+                inlineToolbar: true,
+                config: {
+                    quotePlaceholder: 'Enter a quote',
+                    captionPlaceholder: 'Quote\'s author',
+                },
+            };
+        }
+
+        if (typeof CodeTool !== 'undefined') {
+            tools.code = {
+                class: CodeTool,
+                config: {
+                    placeholder: 'Enter code...'
+                }
+            };
+        }
+
+        if (typeof Delimiter !== 'undefined') {
+            tools.delimiter = Delimiter;
+        }
+
+        if (typeof RawTool !== 'undefined') {
+            tools.raw = RawTool;
+        }
+
+        if (typeof Embed !== 'undefined') {
+            tools.embed = {
+                class: Embed,
+                config: {
+                    services: {
+                        youtube: true,
+                        codepen: true,
+                        twitter: true,
+                        instagram: true,
+                        vimeo: true,
+                    }
+                }
+            };
+        }
+
+        if (typeof Table !== 'undefined') {
+            tools.table = {
+                class: Table,
+                inlineToolbar: true,
+                config: {
+                    rows: 2,
+                    cols: 3,
+                },
+            };
+        }
+
+        if (typeof Warning !== 'undefined') {
+            tools.warning = {
+                class: Warning,
+                inlineToolbar: true,
+                config: {
+                    titlePlaceholder: 'Title',
+                    messagePlaceholder: 'Message',
+                },
+            };
+        }
+
+        if (typeof Marker !== 'undefined') {
+            tools.marker = {
+                class: Marker,
+            };
+        }
+
+        if (typeof InlineCode !== 'undefined') {
+            tools.inlineCode = {
+                class: InlineCode,
+            };
+        }
+
+        return tools;
+    }
+
+    getSavedData() {
+        try {
+            const saved = localStorage.getItem('gorilla-docs-content');
+            if (saved) {
+                return JSON.parse(saved);
+            }
+        } catch (error) {
+            console.warn('Could not load saved content:', error);
+        }
+
+        // Default content
+        return {
+            blocks: [
+                {
+                    type: 'header',
+                    data: {
+                        text: 'Welcome to Your Upgraded Gorilla Docs!',
+                        level: 1
+                    }
+                },
+                {
+                    type: 'paragraph',
+                    data: {
+                        text: 'You can now create rich, block-based content with tables, embedded media, and much more! Start typing to see real-time analytics.'
+                    }
+                },
+                {
+                    type: 'code',
+                    data: {
+                        code: 'function helloWorld() {\n    console.log("Hello, from Gorilla Docs!");\n}'
+                    }
+                }
+            ]
+        };
+    }
+
+    setupAutosave() {
+        // Autosave every 30 seconds
+        this.autosaveInterval = setInterval(this.autosave, 30000);
+    }
+
+    async autosave() {
+        if (!this.editor) return;
+        
+        try {
+            const outputData = await this.editor.save();
+            localStorage.setItem('gorilla-docs-content', JSON.stringify(outputData));
+            
+            // Show subtle autosave indicator
+            this.showAutosaveIndicator();
+        } catch (error) {
+            console.error('Autosave failed:', error);
+        }
+    }
+
+    showAutosaveIndicator() {
+        const indicator = document.createElement('div');
+        indicator.textContent = '✓ Saved';
+        indicator.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius);
+            font-size: var(--font-size-sm);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        `;
+        
+        document.body.appendChild(indicator);
+        
+        requestAnimationFrame(() => {
+            indicator.style.opacity = '1';
+        });
+        
+        setTimeout(() => {
+            indicator.style.opacity = '0';
+            setTimeout(() => {
+                if (indicator.parentNode) {
+                    indicator.remove();
+                }
+            }, 300);
+        }, 2000);
+    }
+
     async imageUploadHandler(file) {
         return new Promise((resolve, reject) => {
-            // Check file size (limit to 5MB)
             if (file.size > 5 * 1024 * 1024) {
                 reject(new Error('Image size should be less than 5MB'));
                 return;
             }
 
-            // Check file type
             const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
             if (!allowedTypes.includes(file.type)) {
                 reject(new Error('Only JPEG, PNG, GIF, and WebP images are allowed'));
@@ -291,7 +325,6 @@ class GorillaDocsApp {
         const themeToggle = document.getElementById('themeToggle');
         if (!themeToggle) return;
 
-        // Load saved theme or default to light
         const savedTheme = this.getSavedTheme();
         this.setTheme(savedTheme);
         
@@ -323,7 +356,6 @@ class GorillaDocsApp {
             themeIcon.textContent = theme === 'light' ? '🌙' : '☀️';
         }
         
-        // Save theme preference
         try {
             localStorage.setItem('gorilla-docs-theme', theme);
         } catch (error) {
@@ -332,10 +364,11 @@ class GorillaDocsApp {
     }
 
     setupEventListeners() {
-        // Editor controls
         this.addEventListenerSafely('toggleEditor', 'click', () => this.toggleEditor());
         this.addEventListenerSafely('shareBtn', 'click', () => this.shareDocument());
         this.addEventListenerSafely('downloadBtn', 'click', () => this.downloadPDF());
+        this.addEventListenerSafely('exportBtn', 'click', () => this.exportDocument());
+        this.addEventListenerSafely('importBtn', 'click', () => this.importDocument());
         
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -343,10 +376,22 @@ class GorillaDocsApp {
                 switch (e.key) {
                     case 's':
                         e.preventDefault();
+                        this.autosave();
+                        break;
+                    case 'p':
+                        e.preventDefault();
                         this.downloadPDF();
                         break;
                 }
             }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (this.autosaveInterval) {
+                clearInterval(this.autosaveInterval);
+            }
+            this.autosave();
         });
     }
 
@@ -386,12 +431,10 @@ class GorillaDocsApp {
                 });
                 this.showNotification('Document shared successfully!', 'success');
             } else {
-                // Fallback: copy link to clipboard
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     await navigator.clipboard.writeText(window.location.href);
                     this.showNotification('Link copied to clipboard!', 'success');
                 } else {
-                    // Fallback for older browsers
                     const textArea = document.createElement('textarea');
                     textArea.value = window.location.href;
                     document.body.appendChild(textArea);
@@ -407,6 +450,53 @@ class GorillaDocsApp {
                 this.showNotification('Unable to share document', 'error');
             }
         }
+    }
+
+    async exportDocument() {
+        if (!this.editor) return;
+        
+        try {
+            const outputData = await this.editor.save();
+            const dataStr = JSON.stringify(outputData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `gorilla-docs-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            this.showNotification('Document exported successfully!', 'success');
+        } catch (error) {
+            console.error('Export failed:', error);
+            this.showNotification('Failed to export document', 'error');
+        }
+    }
+
+    importDocument() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                
+                if (data.blocks && Array.isArray(data.blocks)) {
+                    await this.editor.render(data);
+                    this.showNotification('Document imported successfully!', 'success');
+                    this.updateAnalytics();
+                } else {
+                    throw new Error('Invalid document format');
+                }
+            } catch (error) {
+                console.error('Import failed:', error);
+                this.showNotification('Failed to import document. Please check the file format.', 'error');
+            }
+        };
+        input.click();
     }
 
     async downloadPDF() {
@@ -586,9 +676,14 @@ class GorillaDocsApp {
         return div.innerHTML;
     }
 
+    // FIXED ANALYTICS - This was the main issue
     extractTextFromBlocks(blocks) {
+        if (!blocks || !Array.isArray(blocks)) return '';
+        
         return blocks.map(block => {
             try {
+                if (!block || !block.data) return '';
+                
                 switch (block.type) {
                     case 'header':
                     case 'paragraph':
@@ -598,7 +693,7 @@ class GorillaDocsApp {
                     case 'checklist':
                         return (block.data.items || []).map(item => item.text || '').join(' ');
                     case 'quote':
-                        return block.data.text || '';
+                        return `${block.data.text || ''} ${block.data.caption || ''}`;
                     case 'code':
                         return block.data.code || '';
                     case 'table':
@@ -608,6 +703,8 @@ class GorillaDocsApp {
                         return '';
                     case 'warning':
                         return `${block.data.title || ''} ${block.data.message || ''}`;
+                    case 'image':
+                        return block.data.caption || '';
                     default:
                         return '';
                 }
@@ -615,7 +712,7 @@ class GorillaDocsApp {
                 console.error('Error extracting text from block:', block, error);
                 return '';
             }
-        }).join(' ');
+        }).join(' ').trim();
     }
 
     updateCurrentYear() {
@@ -626,7 +723,10 @@ class GorillaDocsApp {
     }
 
     initializeAnalytics() {
-        this.updateAnalytics();
+        // Initial update after a short delay to ensure editor is ready
+        setTimeout(() => {
+            this.updateAnalytics();
+        }, 500);
     }
 
     async updateAnalytics() {
@@ -635,13 +735,27 @@ class GorillaDocsApp {
         try {
             const outputData = await this.editor.save();
             const text = this.extractTextFromBlocks(outputData.blocks);
+            
+            // Basic stats
             const stats = this.calculateTextStats(text);
             
+            // Structure analysis
+            const structure = this.analyzeDocumentStructure(outputData.blocks);
+            
+            // Writing quality
+            const quality = this.analyzeWritingQuality(text);
+            
+            // Update UI
             this.updateElement('wordCount', stats.words);
             this.updateElement('charCount', stats.characters);
             this.updateElement('readingTime', stats.readingTime);
             this.updateElement('blockCount', outputData.blocks.length);
+            this.updateElement('sentenceCount', stats.sentences);
+            this.updateElement('avgWordsPerSentence', stats.avgWordsPerSentence);
+            this.updateElement('paragraphCount', structure.paragraphs);
+            this.updateElement('headingCount', structure.headings);
             
+            // Readability
             const readability = this.calculateReadabilityScore(text);
             const scoreElement = document.getElementById('readabilityScore');
             if (scoreElement) {
@@ -651,6 +765,13 @@ class GorillaDocsApp {
                     scoreElement.title = readability.description;
                 }
             }
+            
+            // SEO Score
+            this.updateElement('seoScore', this.calculateSEOScore(text, structure));
+            
+            // Writing Grade Level
+            this.updateElement('gradeLevel', quality.gradeLevel);
+            
         } catch (error) {
             console.error('Analytics update failed:', error);
         }
@@ -666,19 +787,116 @@ class GorillaDocsApp {
     calculateTextStats(text) {
         const cleanText = text.trim();
         
-        // More accurate word counting
+        // Word counting
         const words = cleanText ? (cleanText.match(/\b\w+\b/g) || []).length : 0;
         
-        // Character count excluding whitespace
+        // Character count (without spaces)
         const characters = cleanText.replace(/\s/g, '').length;
         
-        // Reading time calculation (200 words per minute average)
+        // Sentence counting
+        const sentences = Math.max(1, (cleanText.match(/[.!?]+/g) || []).length);
+        
+        // Average words per sentence
+        const avgWordsPerSentence = words > 0 ? Math.round(words / sentences) : 0;
+        
+        // Reading time (200 words per minute)
         const readingTimeMinutes = Math.ceil(words / 200);
         const readingTime = readingTimeMinutes === 0 ? '0 min' : 
                           readingTimeMinutes === 1 ? '1 min' : 
                           `${readingTimeMinutes} min`;
         
-        return { words, characters, readingTime };
+        return { 
+            words, 
+            characters, 
+            readingTime, 
+            sentences, 
+            avgWordsPerSentence 
+        };
+    }
+
+    analyzeDocumentStructure(blocks) {
+        const structure = {
+            paragraphs: 0,
+            headings: 0,
+            lists: 0,
+            images: 0,
+            tables: 0,
+            quotes: 0,
+            codeBlocks: 0
+        };
+        
+        blocks.forEach(block => {
+            switch (block.type) {
+                case 'paragraph':
+                    structure.paragraphs++;
+                    break;
+                case 'header':
+                    structure.headings++;
+                    break;
+                case 'list':
+                case 'checklist':
+                    structure.lists++;
+                    break;
+                case 'image':
+                    structure.images++;
+                    break;
+                case 'table':
+                    structure.tables++;
+                    break;
+                case 'quote':
+                    structure.quotes++;
+                    break;
+                case 'code':
+                    structure.codeBlocks++;
+                    break;
+            }
+        });
+        
+        return structure;
+    }
+
+    analyzeWritingQuality(text) {
+        if (!text || text.trim().length === 0) {
+            return { gradeLevel: '-' };
+        }
+
+        const cleanText = text.trim();
+        const words = (cleanText.match(/\b\w+\b/g) || []).length;
+        const sentences = Math.max(1, (cleanText.match(/[.!?]+/g) || []).length);
+        const syllables = this.countSyllables(cleanText);
+        
+        // Flesch-Kincaid Grade Level
+        const gradeLevel = words > 0 ? 
+            (0.39 * (words / sentences)) + (11.8 * (syllables / words)) - 15.59 : 0;
+        
+        const roundedGrade = Math.max(1, Math.min(16, Math.round(gradeLevel)));
+        
+        return {
+            gradeLevel: `Grade ${roundedGrade}`
+        };
+    }
+
+    calculateSEOScore(text, structure) {
+        let score = 0;
+        const words = (text.match(/\b\w+\b/g) || []).length;
+        
+        // Word count (ideal: 300-2000 words)
+        if (words >= 300 && words <= 2000) score += 25;
+        else if (words >= 150) score += 15;
+        
+        // Headings structure
+        if (structure.headings >= 2) score += 25;
+        else if (structure.headings >= 1) score += 15;
+        
+        // Paragraph count (ideal: multiple short paragraphs)
+        if (structure.paragraphs >= 3) score += 25;
+        else if (structure.paragraphs >= 1) score += 15;
+        
+        // Media elements
+        if (structure.images > 0) score += 15;
+        if (structure.lists > 0) score += 10;
+        
+        return Math.min(100, score);
     }
 
     calculateReadabilityScore(text) {
@@ -687,26 +905,18 @@ class GorillaDocsApp {
         }
 
         const cleanText = text.trim();
-        
-        // Count sentences more accurately
         const sentences = Math.max(1, (cleanText.match(/[.!?]+/g) || []).length);
-        
-        // Count words
         const words = (cleanText.match(/\b\w+\b/g) || []).length;
         
         if (words < 10) {
             return { score: '-', description: 'Need more text for analysis' };
         }
         
-        // Count syllables
         const syllables = this.countSyllables(cleanText);
         
         // Flesch Reading Ease Score
         const score = 206.835 - (1.015 * (words / sentences)) - (84.6 * (syllables / words));
-        
-        // Round and constrain score
         const roundedScore = Math.max(0, Math.min(100, Math.round(score)));
-        
         const description = this.getReadabilityDescription(roundedScore);
         
         return { score: roundedScore, description };
@@ -715,20 +925,16 @@ class GorillaDocsApp {
     countSyllables(text) {
         if (!text || text.length === 0) return 0;
         
-        // Convert to lowercase and remove non-alphabetic characters
         const cleanText = text.toLowerCase().replace(/[^a-z\s]/g, ' ');
         const words = cleanText.split(/\s+/).filter(word => word.length > 0);
         
         return words.reduce((totalSyllables, word) => {
-            // Remove common suffixes that don't add syllables
             let processedWord = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
             processedWord = processedWord.replace(/^y/, '');
             
-            // Count vowel groups
             const syllableMatches = processedWord.match(/[aeiouy]{1,2}/g);
             const syllableCount = syllableMatches ? syllableMatches.length : 0;
             
-            // Every word has at least one syllable
             return totalSyllables + Math.max(1, syllableCount);
         }, 0);
     }
@@ -792,13 +998,11 @@ class GorillaDocsApp {
         
         document.body.appendChild(notification);
         
-        // Trigger animation
         requestAnimationFrame(() => {
             notification.style.transform = 'translateX(0)';
             notification.style.opacity = '1';
         });
         
-        // Auto-remove notification
         setTimeout(() => {
             notification.style.transform = 'translateX(20px)';
             notification.style.opacity = '0';
@@ -811,7 +1015,6 @@ class GorillaDocsApp {
         }, type === 'error' ? 5000 : 3000);
     }
 
-    // Utility function for debouncing
     debounce(func, wait) {
         let timeout;
         return function executedFunction(...args) {
@@ -832,7 +1035,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
         console.error('Failed to start Gorilla Docs:', error);
         
-        // Show fallback error message
         const errorDiv = document.createElement('div');
         errorDiv.innerHTML = `
             <div style="
