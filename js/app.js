@@ -24,6 +24,11 @@ class GorillaDocsApp {
                 throw new Error('Editor.js library not loaded. Please check your internet connection.');
             }
             
+            // Initialize Lucide icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
             // Initialize components
             await this.setupEditorJS();
             this.setupThemeToggle();
@@ -259,7 +264,7 @@ class GorillaDocsApp {
 
     showAutosaveIndicator() {
         const indicator = document.createElement('div');
-        indicator.textContent = '✓ Saved';
+        indicator.innerHTML = '<i data-lucide="check" style="width: 16px; height: 16px; margin-right: 0.5rem;"></i>Saved';
         indicator.style.cssText = `
             position: fixed;
             bottom: 20px;
@@ -272,9 +277,16 @@ class GorillaDocsApp {
             z-index: 1000;
             opacity: 0;
             transition: opacity 0.3s ease;
+            display: flex;
+            align-items: center;
         `;
         
         document.body.appendChild(indicator);
+        
+        // Initialize Lucide icons for the new element
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
         
         requestAnimationFrame(() => {
             indicator.style.opacity = '1';
@@ -353,7 +365,13 @@ class GorillaDocsApp {
         
         const themeIcon = document.querySelector('.theme-icon');
         if (themeIcon) {
-            themeIcon.textContent = theme === 'light' ? '🌙' : '☀️';
+            // Update the icon data attribute
+            themeIcon.setAttribute('data-lucide', theme === 'light' ? 'moon' : 'sun');
+            
+            // Re-initialize Lucide icons to update the display
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
         }
         
         try {
@@ -410,7 +428,18 @@ class GorillaDocsApp {
         this.editorHidden = !this.editorHidden;
         
         editorContainer.classList.toggle('hidden', this.editorHidden);
-        toggleBtn.innerHTML = `<span>${this.editorHidden ? '👁️' : '📝'}</span>`;
+        
+        // Update the icon
+        const icon = toggleBtn.querySelector('i');
+        if (icon) {
+            icon.setAttribute('data-lucide', this.editorHidden ? 'eye' : 'edit');
+            
+            // Re-initialize Lucide icons to update the display
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+        
         toggleBtn.setAttribute('aria-label', this.editorHidden ? 'Show editor' : 'Hide editor');
     }
 
@@ -965,7 +994,21 @@ class GorillaDocsApp {
 
     showNotification(message, type = 'info') {
         const notification = document.createElement('div');
-        notification.textContent = message;
+        
+        // Create notification with icon based on type
+        const iconMap = {
+            success: 'check-circle',
+            warning: 'alert-triangle',
+            error: 'x-circle',
+            info: 'info'
+        };
+        
+        const icon = iconMap[type] || iconMap.info;
+        
+        notification.innerHTML = `
+            <i data-lucide="${icon}" style="width: 16px; height: 16px; margin-right: 0.5rem; flex-shrink: 0;"></i>
+            <span>${message}</span>
+        `;
         
         const typeColors = {
             success: 'var(--success)',
@@ -994,9 +1037,16 @@ class GorillaDocsApp {
             opacity: 0;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             max-width: 400px;
+            display: flex;
+            align-items: center;
         `;
         
         document.body.appendChild(notification);
+        
+        // Initialize Lucide icons for the new element
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
         
         requestAnimationFrame(() => {
             notification.style.transform = 'translateX(0)';
