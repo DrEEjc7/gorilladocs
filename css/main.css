@@ -235,6 +235,36 @@ body {
   outline-offset: 2px;
 }
 
+/* Lucide Icon Styles */
+.action-btn i,
+.quick-action-btn i,
+.insight-icon {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  flex-shrink: 0;
+}
+
+.action-btn i {
+  transition: transform 0.2s ease;
+}
+
+.action-btn:hover i {
+  transform: scale(1.1);
+}
+
+/* Theme icon specific styling */
+.theme-icon {
+  transition: transform 0.3s ease;
+}
+
+/* Icon color inheritance */
+i[data-lucide] {
+  color: inherit;
+}
+
 /* Main Content */
 .main-content {
   flex: 1;
@@ -515,9 +545,9 @@ body {
 }
 
 .insight-icon {
-  font-size: var(--font-size-base);
   flex-shrink: 0;
   margin-top: 2px;
+  color: var(--accent-primary);
 }
 
 .insight-text {
@@ -559,6 +589,15 @@ body {
   transform: translateY(0);
 }
 
+.quick-action-btn i {
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+}
+
+.quick-action-btn:hover i {
+  color: var(--accent-primary);
+}
+
 /* Footer */
 .footer {
   background-color: var(--bg-elevated);
@@ -580,6 +619,11 @@ body {
   color: var(--text-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.footer i {
+  vertical-align: middle;
+  margin: 0 0.25rem;
 }
 
 /* Loading Overlay */
@@ -683,7 +727,11 @@ body {
   .action-btn {
     width: 36px;
     height: 36px;
-    font-size: var(--font-size-base);
+  }
+  
+  .action-btn i {
+    width: 16px;
+    height: 16px;
   }
 }
 
@@ -734,6 +782,11 @@ body {
     width: 32px;
     height: 32px;
     padding: var(--space-xs);
+  }
+  
+  .action-btn i {
+    width: 14px;
+    height: 14px;
   }
 }
 
@@ -813,4 +866,45 @@ button:focus-visible,
 
 .stat-value.updated {
   animation: pulse 0.3s ease;
+}
+
+/* Icon hover effects */
+@keyframes iconBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.action-btn:hover i {
+  animation: iconBounce 0.3s ease;
+}
+
+/* Notification icon alignment */
+.notification-icon {
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Loading state icons */
+.loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+/* Success state icons */
+.success-icon {
+  color: var(--success);
+}
+
+/* Error state icons */
+.error-icon {
+  color: var(--error);
+}
+
+/* Warning state icons */
+.warning-icon {
+  color: var(--warning);
+}
+
+/* Info state icons */
+.info-icon {
+  color: var(--info);
 }
