@@ -10,6 +10,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
     <link rel="stylesheet" href="css/main.css">
 </head>
 <body data-theme="light">
@@ -31,22 +34,22 @@
 
                 <div class="header-right">
                     <button class="action-btn" id="exportBtn" aria-label="Export document" title="Export JSON">
-                        <span>📥</span>
+                        <i data-lucide="download"></i>
                     </button>
                     <button class="action-btn" id="importBtn" aria-label="Import document" title="Import JSON">
-                        <span>📤</span>
+                        <i data-lucide="upload"></i>
                     </button>
                     <button class="action-btn" id="themeToggle" aria-label="Toggle theme">
-                        <span class="theme-icon">🌙</span>
+                        <i class="theme-icon" data-lucide="moon"></i>
                     </button>
                     <button class="action-btn" id="toggleEditor" aria-label="Toggle editor">
-                        <span>📝</span>
+                        <i data-lucide="edit"></i>
                     </button>
                     <button class="action-btn" id="shareBtn" aria-label="Share">
-                        <span>🔗</span>
+                        <i data-lucide="share-2"></i>
                     </button>
                     <button class="action-btn" id="downloadBtn" aria-label="Download PDF">
-                        <span>📄</span>
+                        <i data-lucide="file-text"></i>
                     </button>
                 </div>
             </div>
@@ -146,7 +149,7 @@
                         <h4>Document Insights</h4>
                         <div class="insights-list" id="documentInsights">
                             <div class="insight-item">
-                                <span class="insight-icon">💡</span>
+                                <i class="insight-icon" data-lucide="lightbulb" style="width: 16px; height: 16px;"></i>
                                 <span class="insight-text">Start typing to see insights</span>
                             </div>
                         </div>
@@ -157,13 +160,16 @@
                         <h4>Quick Actions</h4>
                         <div class="action-buttons">
                             <button class="quick-action-btn" onclick="window.gorillaDocsApp?.autosave()">
-                                <span>💾</span> Save Now
+                                <i data-lucide="save" style="width: 16px; height: 16px;"></i>
+                                Save Now
                             </button>
                             <button class="quick-action-btn" onclick="window.gorillaDocsApp?.downloadPDF()">
-                                <span>📄</span> Export PDF
+                                <i data-lucide="file-text" style="width: 16px; height: 16px;"></i>
+                                Export PDF
                             </button>
                             <button class="quick-action-btn" onclick="window.gorillaDocsApp?.shareDocument()">
-                                <span>🔗</span> Share
+                                <i data-lucide="share-2" style="width: 16px; height: 16px;"></i>
+                                Share
                             </button>
                         </div>
                     </div>
@@ -172,7 +178,7 @@
         </main>
 
         <footer class="footer">
-            <p>Copyright © <span id="currentYear"></span> • Designed with ❤️ by <a href="https://dee7studio.com" target="_blank" rel="noopener noreferrer">Dee7 Studio</a></p>
+            <p>Copyright © <span id="currentYear"></span> • Designed with <i data-lucide="heart" style="width: 14px; height: 14px; color: var(--error); display: inline-block; vertical-align: middle;"></i> by <a href="https://dee7studio.com" target="_blank" rel="noopener noreferrer">Dee7 Studio</a></p>
         </footer>
     </div>
 
